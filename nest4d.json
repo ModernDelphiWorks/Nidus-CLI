@@ -1,0 +1,12 @@
+{
+  "name": "Nest4D",
+  "description": "Nest4D Framework for Delphi",
+  "version": "master",
+  "homepage": "https://www.nest4f.com.br",
+  "mainsrc": "./dependencies",
+  "projects": [],
+  "dependencies": {
+    "https://github.com/HashLoad/DBEBr.git": "master",
+    "https://github.com/HashLoad/DBCBr.git": "master"
+  }
+}
