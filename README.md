@@ -1,58 +1,58 @@
 # Nest4D CLI
 
-🚀 **Nest4D Framework for Delphi** - Uma ferramenta de linha de comando moderna para desenvolvimento rápido de aplicações Delphi inspirada no NestJS.
+🚀 **Nest4D Framework for Delphi** - A modern command-line tool for rapid Delphi application development inspired by NestJS.
 
-## 📋 Índice
+## 📋 Table of Contents
 
-- [Instalação](#instalação)
-- [Início Rápido](#início-rápido)
-- [Comandos Disponíveis](#comandos-disponíveis)
-- [Estrutura do Projeto](#estrutura-do-projeto)
-- [Exemplos](#exemplos)
-- [Configuração](#configuração)
-- [Contribuindo](#contribuindo)
-- [Licença](#licença)
+- [Installation](#installation)
+- [Quick Start](#quick-start)
+- [Available Commands](#available-commands)
+- [Project Structure](#project-structure)
+- [Examples](#examples)
+- [Configuration](#configuration)
+- [Contributing](#contributing)
+- [License](#license)
 
-## 🔧 Instalação
+## 🔧 Installation
 
-### Pré-requisitos
+### Prerequisites
 
-- Delphi 10.3 ou superior
-- Git instalado
-- Windows (suporte para outras plataformas em desenvolvimento)
+- Delphi 10.3 or higher
+- Git installed
+- Windows (support for other platforms in development)
 
-### Instalação via Cargo
+### Installation via Cargo
 
 ```bash
 cargo install nest4d-cli
 ```
 
-### Instalação via Binário
+### Installation via Binary
 
-Baixe o binário mais recente da [página de releases](https://github.com/your-repo/nest4d-cli/releases) e adicione ao seu PATH.
+Download the latest binary from the [releases page](https://github.com/your-repo/nest4d-cli/releases) and add it to your PATH.
 
-## 🚀 Início Rápido
+## 🚀 Quick Start
 
-### 1. Criar um novo projeto
+### 1. Create a new project
 
 ```bash
 nest4d new --project MyApp --path ./
 ```
 
-### 2. Instalar dependências
+### 2. Install dependencies
 
 ```bash
 cd MyApp
 nest4d install
 ```
 
-### 3. Gerar um módulo
+### 3. Generate a module
 
 ```bash
 nest4d gen module User
 ```
 
-### 4. Gerar componentes específicos
+### 4. Generate specific components
 
 ```bash
 nest4d gen controller User
@@ -60,66 +60,66 @@ nest4d gen service User
 nest4d gen repository User
 ```
 
-## 📚 Comandos Disponíveis
+## 📚 Available Commands
 
-### `new` - Criar novo projeto
-
-```bash
-nest4d new --project <nome> --path <caminho> [--with-tests]
-```
-
-**Opções:**
-- `--project, -p`: Nome do projeto
-- `--path`: Caminho onde criar o projeto (deve começar com `./`)
-- `--with-tests`: Incluir estrutura de testes
-
-### `gen` - Gerar componentes
+### `new` - Create new project
 
 ```bash
-nest4d gen <tipo> <nome> [opções]
+nest4d new --project <name> --path <path> [--with-tests]
 ```
 
-**Tipos disponíveis:**
-- `module`: Gera um módulo completo
-- `controller`: Gera apenas o controller
-- `service`: Gera apenas o service
-- `repository`: Gera apenas o repository
-- `interface`: Gera apenas a interface
-- `infra`: Gera apenas a infraestrutura
-- `handler`: Gera apenas o handler
-- `scaffold`: Gera estrutura completa
-- `all`: Gera todos os componentes
+**Options:**
+- `--project, -p`: Project name
+- `--path`: Path where to create the project (must start with `./`)
+- `--with-tests`: Include test structure
 
-**Opções:**
-- `--flat`: Não criar subpasta para o módulo
-- `--path <caminho>`: Caminho específico para geração
-- `--overwrite`: Sobrescrever arquivos existentes
+### `gen` - Generate components
 
-### `install` - Instalar dependências
+```bash
+nest4d gen <type> <name> [options]
+```
+
+**Available types:**
+- `module`: Generates a complete module
+- `controller`: Generates only the controller
+- `service`: Generates only the service
+- `repository`: Generates only the repository
+- `interface`: Generates only the interface
+- `infra`: Generates only the infrastructure
+- `handler`: Generates only the handler
+- `scaffold`: Generates complete structure
+- `all`: Generates all components
+
+**Options:**
+- `--flat`: Don't create subfolder for the module
+- `--path <path>`: Specific path for generation
+- `--overwrite`: Overwrite existing files
+
+### `install` - Install dependencies
 
 ```bash
 nest4d install
 ```
 
-Instala todas as dependências definidas no `nest4d.json`.
+Installs all dependencies defined in `nest4d.json`.
 
-### Outros comandos
+### Other commands
 
 ```bash
-nest4d --version    # Mostra a versão
-nest4d --help       # Mostra ajuda
+nest4d --version    # Shows version
+nest4d --help       # Shows help
 ```
 
-## 🏗️ Estrutura do Projeto
+## 🏗️ Project Structure
 
-Um projeto Nest4D típico tem a seguinte estrutura:
+A typical Nest4D project has the following structure:
 
 ```
 MyApp/
-├── MyApp.dpr              # Arquivo principal do projeto
-├── nest4d.json            # Configuração do projeto
+├── MyApp.dpr              # Main project file
+├── nest4d.json            # Project configuration
 ├── src/
-│   ├── AppModule.pas       # Módulo principal da aplicação
+│   ├── AppModule.pas       # Main application module
 │   └── modules/
 │       └── user/
 │           ├── UserModule.pas
@@ -128,47 +128,47 @@ MyApp/
 │           ├── UserRepository.pas
 │           ├── UserInterface.pas
 │           └── UserInfra.pas
-└── test/                   # Testes (se --with-tests foi usado)
+└── test/                   # Tests (if --with-tests was used)
     └── ...
 ```
 
-## 💡 Exemplos
+## 💡 Examples
 
-### Criando um módulo de usuários completo
+### Creating a complete user module
 
 ```bash
-# Gera módulo, controller, service, repository, interface e infra
+# Generates module, controller, service, repository, interface and infra
 nest4d gen module User
 ```
 
-### Gerando componentes individuais
+### Generating individual components
 
 ```bash
-# Apenas o controller
+# Only the controller
 nest4d gen controller Product
 
-# Service em um caminho específico
+# Service in a specific path
 nest4d gen service Order --path ./src/modules/orders
 
-# Sobrescrever arquivo existente
+# Overwrite existing file
 nest4d gen repository Customer --overwrite
 ```
 
-### Estrutura flat (sem subpastas)
+### Flat structure (without subfolders)
 
 ```bash
-# Gera arquivos diretamente na pasta atual
+# Generates files directly in current folder
 nest4d gen module Auth --flat
 ```
 
-## ⚙️ Configuração
+## ⚙️ Configuration
 
-O arquivo `nest4d.json` contém as configurações do projeto:
+The `nest4d.json` file contains the project configurations:
 
 ```json
 {
   "name": "MyApp",
-  "description": "Minha aplicação Nest4D",
+  "description": "My Nest4D application",
   "version": "1.0.0",
   "homepage": "https://github.com/user/myapp",
   "srcmain": "src",
@@ -182,73 +182,73 @@ O arquivo `nest4d.json` contém as configurações do projeto:
 }
 ```
 
-### Adicionando dependências
+### Adding dependencies
 
-Edite o array `dependencies` no `nest4d.json` e execute:
+Edit the `dependencies` array in `nest4d.json` and run:
 
 ```bash
 nest4d install
 ```
 
-## 🧪 Executando Testes
+## 🧪 Running Tests
 
 ```bash
-# Executar todos os testes
+# Run all tests
 cargo test
 
-# Executar testes específicos
+# Run specific tests
 cargo test validation
 cargo test integration
 
-# Executar com output detalhado
+# Run with detailed output
 cargo test -- --nocapture
 ```
 
-## 🤝 Contribuindo
+## 🤝 Contributing
 
-1. Faça um fork do projeto
-2. Crie uma branch para sua feature (`git checkout -b feature/AmazingFeature`)
-3. Commit suas mudanças (`git commit -m 'Add some AmazingFeature'`)
-4. Push para a branch (`git push origin feature/AmazingFeature`)
-5. Abra um Pull Request
+1. Fork the project
+2. Create a feature branch (`git checkout -b feature/AmazingFeature`)
+3. Commit your changes (`git commit -m 'Add some AmazingFeature'`)
+4. Push to the branch (`git push origin feature/AmazingFeature`)
+5. Open a Pull Request
 
-### Desenvolvimento Local
+### Local Development
 
 ```bash
-# Clone o repositório
+# Clone the repository
 git clone https://github.com/your-repo/nest4d-cli.git
 cd nest4d-cli
 
-# Instale dependências
+# Install dependencies
 cargo build
 
-# Execute testes
+# Run tests
 cargo test
 
-# Execute o CLI localmente
+# Run CLI locally
 cargo run -- --help
 ```
 
-## 📝 Licença
+## 📝 License
 
-Este projeto está licenciado sob a Licença MIT - veja o arquivo [LICENSE](LICENSE) para detalhes.
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
-## 🆘 Suporte
+## 🆘 Support
 
-- 📖 [Documentação](https://nest4d.dev)
-- 🐛 [Reportar Bug](https://github.com/your-repo/nest4d-cli/issues)
-- 💡 [Solicitar Feature](https://github.com/your-repo/nest4d-cli/issues)
-- 💬 [Discussões](https://github.com/your-repo/nest4d-cli/discussions)
+- 📖 [Documentation](https://nest4d.dev)
+- 🐛 [Report Bug](https://github.com/your-repo/nest4d-cli/issues)
+- 💡 [Request Feature](https://github.com/your-repo/nest4d-cli/issues)
+- 💬 [Discussions](https://github.com/your-repo/nest4d-cli/discussions)
 
 ## 🎯 Roadmap
 
-- [ ] Suporte para Linux e macOS
-- [ ] Templates customizáveis
-- [ ] Integração com IDEs
-- [ ] Geração de documentação automática
-- [ ] Suporte para Docker
+- [ ] Support for Linux and macOS
+- [ ] Customizable templates
+- [ ] IDE integration
+- [ ] Automatic documentation generation
+- [ ] Docker support
 - [ ] Plugin system
 
 ---
 
-**Feito com ❤️ para a comunidade Delphi**
+**Made with ❤️ for the Delphi community**
