@@ -1,0 +1,128 @@
+unit XmlHandler;
+
+interface
+
+uses
+  SysUtils,
+  Horse,
+  System.Evolution.ResultPair,
+  nest4d,
+  nest4d.route.handler.horse;
+
+type
+  TXmlRouteHandler = class(TRouteHandlerHorse)
+  private
+    const CONTENTTYPE_JSON = 'application/json; charset=UTF-8';
+  protected
+    procedure RegisterRoutes; override;
+  public
+    constructor Create; override;
+    procedure Find(Req: THorseRequest; Res: THorseResponse);
+    procedure Insert(Req: THorseRequest; Res: THorseResponse);
+    procedure Update(Req: THorseRequest; Res: THorseResponse);
+    procedure Delete(Req: THorseRequest; Res: THorseResponse);
+  end;
+
+implementation
+
+uses
+  nest4d.horse,
+  XmlController;
+
+{ TXmlRouteHandler }
+
+procedure TXmlRouteHandler.RegisterRoutes;
+begin
+  inherited;
+  RouteGet('/$mod', Find);
+  RoutePost('/$mod', Insert);
+  RoutePut('/$mod', Update);
+  RouteDelete('/$mod', Delete);
+end;
+
+constructor TXmlRouteHandler.Create;
+begin
+  inherited;
+end;
+
+procedure TXmlRouteHandler.Delete(Req: THorseRequest; Res: THorseResponse);
+var
+  LResult: TResultPair<String, Exception>;
+begin
+  LResult := GetNest4D.Get<TXmlController>.Delete;
+  LResult.When(
+    procedure (Msg: String)
+    begin
+      Res.Send(Msg).ContentType(CONTENTTYPE_JSON).Status(200);
+    end,
+    procedure (Error: Exception)
+    begin
+      try
+        raise Exception.Create(Error.Message);
+      finally
+        Error.Free;
+      end;
+    end);
+end;
+
+procedure TXmlRouteHandler.Find(Req: THorseRequest; Res: THorseResponse);
+var
+  LResult: TResultPair<String, Exception>;
+begin
+  LResult := GetNest4D.Get<TXmlController>.Find;
+  LResult.When(
+    procedure (Json: String)
+    begin
+      Res.Send(Json).ContentType(CONTENTTYPE_JSON).Status(200);
+    end,
+    procedure (Error: Exception)
+    begin
+      try
+        raise Exception.Create(Error.Message);
+      finally
+        Error.Free;
+      end;
+    end);
+end;
+
+procedure TXmlRouteHandler.Insert(Req: THorseRequest; Res: THorseResponse);
+var
+  LResult: TResultPair<String, Exception>;
+begin
+  LResult := GetNest4D.Get<TXmlController>.Insert(Req.Body);
+  LResult.When(
+    procedure (Msg: String)
+    begin
+      Res.Send(Msg).ContentType(CONTENTTYPE_JSON).Status(200);
+    end,
+    procedure (Error: Exception)
+    begin
+      try
+        raise Exception.Create(Error.Message);
+      finally
+        Error.Free;
+      end;
+    end);
+end;
+
+procedure TXmlRouteHandler.Update(Req: THorseRequest; Res: THorseResponse);
+var
+  LResult: TResultPair<String, Exception>;
+begin
+  LResult := GetNest4D.Get<TXmlController>.Update(Req.Body);
+  LResult.When(
+    procedure (Msg: String)
+    begin
+      Res.Send(Msg).ContentType(CONTENTTYPE_JSON).Status(200);
+    end,
+    procedure (Error: Exception)
+    begin
+      try
+        raise Exception.Create(Error.Message);
+      finally
+        Error.Free;
+      end;
+    end);
+end;
+
+end.

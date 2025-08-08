@@ -1,6 +1,7 @@
 use clap::builder::styling::{AnsiColor, Effects};
 use clap::builder::Styles;
 use clap::{ArgMatches, Command};
+use colored::Colorize;
 use nest4d::commands::command_trait::cmd_trait::ICommand;
 use nest4d::commands::options::{
     option_info::CommandInfo, option_pattern::CommandPattern, option_template::CommandTemplate,
@@ -8,7 +9,7 @@ use nest4d::commands::options::{
 use nest4d::dto::config_global_dto::ConfigGlobalDTO;
 use nest4d::{
     commands::{
-        cmd_gen::CommandGen, cmd_init::CommandInit, cmd_install::CommandInstall,
+        cmd_add_paths::CommandAddPaths, cmd_gen::CommandGen, cmd_install::CommandInstall,
         cmd_new::CommandNew, cmd_update::CommandUpdate,
     },
     core::core_utils::utils,
@@ -25,16 +26,24 @@ fn main() {
         .literal(AnsiColor::Blue.on_default() | Effects::BOLD)
         .placeholder(AnsiColor::Cyan.on_default());
 
+    let about_text = format!(
+        "{}\n{}",
+        "⚡ Nest4D CLI".bright_yellow().bold(),
+        "Automate Delphi Nest4D code creation for faster development"
+            .bright_white()
+            .italic()
+    );
+
     let cmd: Command = Command::new("nest4d")
         .version(utils::version_str())
         .styles(styles)
         .bin_name("nest4d")
         .author("Isaque Pinheiro, isaquesp@gmail.com")
-        .about("Nest4d CLI: Automate Delphi Nest4d code creation for faster development")
+        .about(about_text)
         .arg(CommandTemplate::arg())
         .arg(CommandInfo::arg())
         .arg(CommandPattern::arg())
-        .subcommand(CommandInit::command())
+        .subcommand(CommandAddPaths::command())
         .subcommand(CommandNew::command())
         .subcommand(CommandGen::command())
         .subcommand(CommandInstall::command())
@@ -51,14 +60,14 @@ fn main() {
     // If not options (tags)
     if !is_options {
         match matches.subcommand() {
-            Some(("init", matches)) => CommandInit::execute(&mut config_global, matches),
+            Some(("install", matches)) => CommandInstall::execute(&mut config_global, matches),
+            Some(("add-paths", matches)) => CommandAddPaths::execute(&mut config_global, matches),
             Some(("new", matches)) => CommandNew::execute(&mut config_global, matches),
             Some(("gen", matches)) => CommandGen::execute(&mut config_global, matches),
-            Some(("install", matches)) => CommandInstall::execute(&mut config_global, matches),
             Some(("update", matches)) => CommandUpdate::execute(&mut config_global, matches),
             _ => unreachable!("clap should ensure we don't get here"),
         };
-        println!("{}", config_global);
+        // println!("{}", config_global);
     }
 }
 

@@ -1,16 +1,14 @@
-use colored::Colorize;
-
-use crate::core::core_utils::utils;
-
 use super::cmd_gen_dto::CommandGenerateDTO;
-use super::cmd_init_dto::CommandInitDTO;
+use super::cmd_install_dto::CommandInstallDTO;
 use super::cmd_new_dto::CommandNewDTO;
+use crate::core::core_utils::utils;
+use colored::Colorize;
 use std::fmt;
 use std::fs::File;
 use std::io::BufReader;
 
 pub struct ConfigGlobalDTO {
-    config_json: Option<CommandInitDTO>,
+    config_json: Option<CommandInstallDTO>,
     command_new: Option<CommandNewDTO>,
     command_gen: Option<CommandGenerateDTO>,
 }
@@ -42,35 +40,35 @@ impl ConfigGlobalDTO {
         self.command_gen.as_ref()
     }
 
-    pub fn get_command_init(&self) -> Option<&CommandInitDTO> {
+    pub fn get_command_install(&self) -> Option<&CommandInstallDTO> {
         self.config_json.as_ref()
     }
 
     fn _load_config_from_file(&mut self) {
-        match File::open("nest4d.json") {
-            Ok(file) => {
-                let reader = BufReader::new(file);
-                match serde_json::from_reader::<_, CommandInitDTO>(reader) {
-                    Ok(mut config) => {
-                        let main_repo_url = "https://github.com/HashLoad/Nest4d.git";
-                        let main_version = config.version.clone();
-                        config
-                            .dependencies
-                            .insert(main_repo_url.to_string(), main_version);
-                        self.config_json = Some(config);
-                    }
-                    Err(e) => {
-                        eprintln!("❌ Failed to parse nest4d.json: {}", e);
-                    }
-                }
+        let file: File = File::open("nest4d.json").unwrap_or_else(|_| {
+            utils::println_panic(&[
+                &"🚨 File nest4d.json not found!".red(),
+                &"⚠️ File required!.".yellow(),
+            ]);
+            std::process::exit(1);
+        });
+
+        let reader: BufReader<File> = BufReader::new(file);
+
+        let mut config: CommandInstallDTO = match serde_json::from_reader(reader) {
+            Ok(cfg) => cfg,
+            Err(e) => {
+                eprintln!("❌ Failed to parse nest4d.json: {}", e);
+                std::process::exit(1);
             }
-            Err(_) => {
-                utils::println_panic(&[
-                    &"🚨 File nest4d.json not found!".red(),
-                    &"⚠️ Run the 'nest4d init' command to create the configuration file.".yellow(),
-                ]);
-            }
-        }
+        };
+
+        // Inclui o repositório principal (caso não esteja presente)
+        let main_repo_url: String = config.download.clone();
+        let main_version: String = "".to_string();
+        config.dependencies.insert(main_repo_url, main_version);
+
+        self.config_json = Some(config);
     }
 }
 

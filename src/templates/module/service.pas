@@ -1,46 +1,78 @@
-unit $mod$Service;
+unit <mod>Service;
 
 interface
 
 uses
-  $mod$, $mod$Repository;
+  System.SysUtils,
+  System.Evolution.ResultPair,
+  <mod>Repository,
+  <mod>Interface;
 
 type
-  T$mod$Service = class
+  T<mod>Service = class(TInterfacedObject, I<mod>)
   private
-    F$mod$Repository: T$mod$Repository;
+    FRepository: T<mod>Repository;
   public
-    constructor Create;
+    constructor Create(const ARepository: T<mod>Repository);
     destructor Destroy; override;
-    function Create$mod$(const AName, AEmail: String): Boolean;
+    function Find: TResultPair<String, Exception>;
+    function Insert(const AJson: String): TResultPair<String, Exception>;
+    function Update(const AJson: String): TResultPair<String, Exception>;
+    function Delete: TResultPair<String, Exception>;
   end;
 
 implementation
 
-{ T$mod$Service }
+{ T<mod>Service }
 
-constructor T$mod$Service.Create;
+constructor T<mod>Service.Create(const ARepository: T<mod>Repository);
 begin
-  F$mod$Repository := T$mod$Repository.Create;
+  FRepository := ARepository;
 end;
 
-destructor T$mod$Service.Destroy;
+destructor T<mod>Service.Destroy;
 begin
-  F$mod$Repository.free;
+  FRepository.Free;
   inherited;
 end;
 
-function T$mod$Service.Create$mod$(const AName, AEmail: String): Boolean;
-var
-  L$mod$: T$mod$;
+function T<mod>Service.Delete: TResultPair<String, Exception>;
 begin
-  L$mod$ := T$mod$.Create;
   try
-  L$mod$.Name := AName;
-  L$mod$.Email := AEmail;
-  Result := F$mod$Repository.Save($mod$);
-  finally
-    L$mod$.Free;
+    Result.Success(FRepository.Delete);
+  except
+    on E: Exception do
+      Result.Failure(E);
+  end;
+end;
+
+function T<mod>Service.Find: TResultPair<String, Exception>;
+begin
+  try
+    Result.Success(FRepository.Find);
+  except
+    on E: Exception do
+      Result.Failure(E);
+  end;
+end;
+
+function T<mod>Service.Insert(const AJson: String): TResultPair<String, Exception>;
+begin
+  try
+    Result.Success(FRepository.Insert(AJson));
+  except
+    on E: Exception do
+      Result.Failure(E);
+  end;
+end;
+
+function T<mod>Service.Update(const AJson: String): TResultPair<String, Exception>;
+begin
+  try
+    Result.Success(FRepository.Update(AJson));
+  except
+    on E: Exception do
+      Result.Failure(E);
   end;
 end;
 

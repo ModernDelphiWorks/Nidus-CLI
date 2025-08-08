@@ -1,32 +1,74 @@
-unit $mod$Repository;
+unit <mod>Repository;
 
 interface
 
 uses
-  $mod$;
+  System.SysUtils,
+  <mod>Infra,
+  <mod>Interface;
 
 type
-  T$mod$Repository = class
+  T<mod>Repository = class
+  private
+    FInfra: T<mod>Infra;
   public
-    function Save(const A$mod$: T$mod$): Boolean;
-    function GetById(const Id: Integer): T$mod$;
-    // Outros métodos de acesso a dados aqui...
+    constructor Create(const AInfra: T<mod>Infra);
+    destructor Destroy; override;
+    function Find: String;
+    function Insert(const AJson: String): String;
+    function Update(const AJson: String): String;
+    function Delete: String;
   end;
 
 implementation
 
-{ T$mod$Repository }
+{ T<mod>Repository }
 
-function T$mod$Repository.Save(const A$mod$: T$mod$): Boolean;
+constructor T<mod>Repository.Create(const AInfra: T<mod>Infra);
 begin
-  // Implementação para salvar o usuário no banco de dados usando ORM
-  Result := True; // Retorna verdadeiro se a operação foi bem-sucedida
+  FInfra := AInfra;
 end;
 
-function T$mod$Repository.GetById(const Id: Integer): T$mod$;
+destructor T<mod>Repository.Destroy;
 begin
-  // Implementação para buscar um usuário pelo ID no banco de dados usando ORM
-  Result := nil; // Retorna nil se o usuário não for encontrado
+  FInfra.Free;
+  inherited;
 end;
 
-end.      
+function T<mod>Repository.Delete: String;
+begin
+  try
+    Result := 'sucesso!';
+  except
+    raise Exception.Create('falha!');
+  end;
+end;
+
+function T<mod>Repository.Find: String;
+begin
+  try
+    Result := 'sucesso!';
+  except
+    raise Exception.Create('falha!');
+  end;
+end;
+
+function T<mod>Repository.Insert(const AJson: String): String;
+begin
+  try
+    Result := 'sucesso!';
+  except
+    raise Exception.Create('falha!');
+  end;
+end;
+
+function T<mod>Repository.Update(const AJson: String): String;
+begin
+  try
+    Result := 'sucesso!';
+  except
+    raise Exception.Create('falha!');
+  end;
+end;
+
+end.

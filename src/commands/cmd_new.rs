@@ -2,7 +2,7 @@ use super::super::core::core_utils::utils;
 use super::super::dto::cmd_new_dto::CommandNewDTO;
 use super::super::dto::config_global_dto::ConfigGlobalDTO;
 use super::command_trait::cmd_trait::ICommand;
-
+use crate::core::core_generate_project::project;
 use clap::{Arg, ArgAction, Command};
 use colored::Colorize;
 use std::path::PathBuf;
@@ -20,18 +20,18 @@ impl ICommand for CommandNew {
 
     fn command() -> Command {
         Command::new("new")
-            .about("Create a new Nest4d project")
+            .about("🆕 Create a new Nest4d project")
             .arg(
                 Arg::new("project_name")
-                    .long("new")
-                    .value_name("STRING")
+                    .long("project")
+                    .value_name("NAME")
                     .help("Name of the project to be created")
                     .required(true),
             )
             .arg(
                 Arg::new("path")
                     .long("path")
-                    .value_name("STRING")
+                    .value_name("PATH")
                     .default_value("./")
                     .value_parser(clap::value_parser!(PathBuf))
                     .help("Target path to create the project in"),
@@ -44,10 +44,10 @@ impl ICommand for CommandNew {
             )
     }
 
-    fn execute(_global_dto: &mut ConfigGlobalDTO, _matches: &clap::ArgMatches) {
-        let path: PathBuf = _matches.get_one::<PathBuf>("path").unwrap().clone();
-        let project_name: String = _matches.get_one::<String>("project_name").unwrap().clone();
-        let include_tests: bool = _matches.get_flag("with-tests");
+    fn execute(global_dto: &mut ConfigGlobalDTO, matches: &clap::ArgMatches) {
+        let path: PathBuf = matches.get_one::<PathBuf>("path").unwrap().clone();
+        let project_name: String = matches.get_one::<String>("project_name").unwrap().clone();
+        let include_tests: bool = matches.get_flag("with-tests");
 
         // Valida path
         if !path.starts_with("./") {
@@ -64,12 +64,12 @@ impl ICommand for CommandNew {
         }
 
         // Salva DTO, mesmo que drivers não sejam mais usados
-        let command_new = CommandNewDTO::new(path.clone(), project_name.clone());
-        _global_dto.set_command_new(command_new);
+        let command_new: CommandNewDTO = CommandNewDTO::new(path.clone(), project_name.clone());
+        global_dto.set_command_new(command_new);
 
         // Gera estrutura de projeto
         if let Err(err) =
-            utils::generate_project_structure(path.clone(), &project_name, include_tests)
+            project::generate_project_structure(path.clone(), &project_name, include_tests)
         {
             utils::println_panic(&[&format!("❌ Error generating project structure: {}", err)]);
         } else {

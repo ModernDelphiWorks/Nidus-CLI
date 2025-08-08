@@ -17,13 +17,17 @@ impl ICommand for CommandUpdate {
     }
 
     fn command() -> Command {
-        Command::new("update").about("Update the nest4d framework and its dependencies.")
+        Command::new("update").about("⏳ Update the nest4d framework and its dependencies.")
     }
 
     fn execute(_global_dto: &mut ConfigGlobalDTO, _matches: &clap::ArgMatches) {
-        let mainsrc: String = _global_dto.get_command_init().unwrap().mainsrc.to_string();
+        let mainsrc: String = _global_dto
+            .get_command_install()
+            .unwrap()
+            .mainsrc
+            .to_string();
 
-        if let Some(command_init) = _global_dto.get_command_init() {
+        if let Some(command_init) = _global_dto.get_command_install() {
             for (repo_url, version) in &command_init.dependencies {
                 let repo_name: String = utils::extract_repo_name(repo_url).unwrap();
                 let repo_path: String = format!("{}/{}", mainsrc, repo_name);

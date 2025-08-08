@@ -1,0 +1,46 @@
+﻿program meu_projeto;
+
+{$APPTYPE CONSOLE}
+
+{$R *.res}
+
+uses
+  System.SysUtils,
+  Horse,
+  nest4d,
+  nest4d.horse,
+  AppModule in 'src\AppModule.pas',
+  ConfigModule in 'src\modules\config\ConfigModule.pas',
+  ConfigHandler in 'src\modules\config\ConfigHandler.pas',
+  ConfigController in 'src\modules\config\ConfigController.pas',
+  ConfigService in 'src\modules\config\ConfigService.pas',
+  ConfigRepository in 'src\modules\config\ConfigRepository.pas',
+  ConfigInterface in 'src\modules\config\ConfigInterface.pas',
+  ConfigInfra in 'src\modules\config\ConfigInfra.pas',
+  NfeModule in 'src\modules\nfe\NfeModule.pas',
+  NfeHandler in 'src\modules\nfe\NfeHandler.pas',
+  NfeController in 'src\modules\nfe\NfeController.pas',
+  NfeService in 'src\modules\nfe\NfeService.pas',
+  NfeRepository in 'src\modules\nfe\NfeRepository.pas',
+  NfeInterface in 'src\modules\nfe\NfeInterface.pas',
+  NfeInfra in 'src\modules\nfe\NfeInfra.pas',
+  XmlModule in 'src\modules\xml\XmlModule.pas',
+  XmlHandler in 'src\modules\xml\XmlHandler.pas',
+  XmlController in 'src\modules\xml\XmlController.pas',
+  XmlService in 'src\modules\xml\XmlService.pas',
+  XmlRepository in 'src\modules\xml\XmlRepository.pas',
+  XmlInterface in 'src\modules\xml\XmlInterface.pas',
+  XmlInfra in 'src\modules\xml\XmlInfra.pas';
+
+begin
+  THorse.Use( HorseNest4d(TAppModule.Create) );
+
+  // Colocar servidor no ar.
+  THorse.Listen(9000, '127.0.0.1',
+  procedure
+  begin
+    Writeln('');
+    Writeln('🚀 Server running at http://127.0.0.1:9000');
+    Writeln('');
+  end);
+end.

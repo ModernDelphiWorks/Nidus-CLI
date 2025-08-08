@@ -1,0 +1,20 @@
+unit XmlInterface;
+
+interface
+
+uses
+  System.Evolution.ResultPair,
+  SysUtils;
+
+type
+  IXml = interface
+    ['{????????-????-????-????-????????????}']
+    function Find: TResultPair<String, Exception>;
+    function Insert(const AJson: String): TResultPair<String, Exception>;
+    function Update(const AJson: String): TResultPair<String, Exception>;
+    function Delete: TResultPair<String, Exception>;
+  end;
+
+implementation
+
+end.

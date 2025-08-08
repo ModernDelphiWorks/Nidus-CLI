@@ -1,7 +1,7 @@
-use super::super::core::core_utils::utils::generate_module_structure;
 use super::super::dto::cmd_gen_dto::{CommandGenerateDTO, GenerateType};
 use super::super::dto::config_global_dto::ConfigGlobalDTO;
 use super::command_trait::cmd_trait::ICommand;
+use crate::core::core_generate_module::module;
 use clap::{Arg, ArgAction, ArgMatches, Command};
 use colored::*;
 use std::path::PathBuf;
@@ -19,56 +19,79 @@ impl ICommand for CommandGen {
 
     fn command() -> Command {
         let common_args = |cmd: Command| {
-            cmd.arg(Arg::new("name").help("Module name").required(true))
-                .arg(
-                    Arg::new("flat")
-                        .long("flat")
-                        .action(ArgAction::SetTrue)
-                        .help("Create files in flat structure (not used yet)"),
-                )
-                .arg(
-                    Arg::new("path")
-                        .long("path")
-                        .value_name("PATH")
-                        .help("Custom path to src folder (default: ./src)"),
-                )
-                .arg(
-                    Arg::new("overwrite")
-                        .long("overwrite")
-                        .action(ArgAction::SetTrue)
-                        .help("Overwrite existing files if they exist"),
-                )
+            cmd.arg(
+                Arg::new("name")
+                    .help("Module name")
+                    .required(true)
+                    .value_name("MODULE_NAME"),
+            )
+            .arg(
+                Arg::new("flat")
+                    .long("flat")
+                    .action(ArgAction::SetTrue)
+                    .help("Create files in flat structure (not used yet)"),
+            )
+            .arg(
+                Arg::new("path")
+                    .long("path")
+                    .value_name("PATH")
+                    .help("Custom path to src folder (default: ./src)"),
+            )
+            .arg(
+                Arg::new("overwrite")
+                    .long("overwrite")
+                    .action(ArgAction::SetTrue)
+                    .help("Overwrite existing files if they exist"),
+            )
         };
 
         Command::new("gen")
             .about("🔧 Generate Nest4d structure")
+            .visible_alias("generate")
             .subcommand(common_args(
-                Command::new("module").about("📦 Generate a module"),
+                Command::new("module")
+                    .about("📦 Generate a module and handler")
+                    .arg_required_else_help(true),
             ))
             .subcommand(common_args(
-                Command::new("handler").about("🌐 Generate handler"),
+                Command::new("handler")
+                    .about("🌐 Generate handler")
+                    .arg_required_else_help(true),
+            ))
+            .subcommand(common_args(
+                Command::new("controller")
+                    .about("🎯 Generate a controller")
+                    .arg_required_else_help(true),
+            ))
+            .subcommand(common_args(
+                Command::new("service")
+                    .about("⚙️ Generate a service")
+                    .arg_required_else_help(true),
+            ))
+            .subcommand(common_args(
+                Command::new("repository")
+                    .about("🗃 Generate a repository")
+                    .arg_required_else_help(true),
+            ))
+            .subcommand(common_args(
+                Command::new("interface")
+                    .about("🔌 Generate an interface")
+                    .arg_required_else_help(true),
+            ))
+            .subcommand(common_args(
+                Command::new("infra")
+                    .about("🔧 Generate infrastructure")
+                    .arg_required_else_help(true),
             ))
             .subcommand(common_args(
                 Command::new("scaffold")
-                    .about("🧱 Generate base structure (controller, service, etc)"),
+                    .about("🧱 Generate base structure (controller, service, etc)")
+                    .arg_required_else_help(true),
             ))
             .subcommand(common_args(
-                Command::new("controller").about("🎯 Generate a controller"),
-            ))
-            .subcommand(common_args(
-                Command::new("service").about("⚙️ Generate a service"),
-            ))
-            .subcommand(common_args(
-                Command::new("repository").about("🗃 Generate a repository"),
-            ))
-            .subcommand(common_args(
-                Command::new("interface").about("🔌 Generate an interface"),
-            ))
-            .subcommand(common_args(
-                Command::new("infra").about("🔧 Generate infrastructure"),
-            ))
-            .subcommand(common_args(
-                Command::new("all").about("🧰 Generate full module and logic"),
+                Command::new("all")
+                    .about("🧰 Generate full module and logic")
+                    .arg_required_else_help(true),
             ))
     }
 
@@ -92,7 +115,7 @@ impl ICommand for CommandGen {
                     "interface",
                     "infra",
                 ],
-                GenerateType::Module => vec!["module"],
+                GenerateType::Module => vec!["module", "handler"],
                 GenerateType::Handler => vec!["handler"],
                 GenerateType::Controller => vec!["controller"],
                 GenerateType::Service => vec!["service"],
@@ -101,7 +124,11 @@ impl ICommand for CommandGen {
                 GenerateType::Infra => vec!["infra"],
             };
 
-            match generate_module_structure(src_path.clone(), module_name.as_str(), &components) {
+            match module::generate_module_structure(
+                src_path.clone(),
+                module_name.as_str(),
+                &components,
+            ) {
                 Ok(_) => {
                     println!(
                         "{} Module '{}' generated successfully in {}",

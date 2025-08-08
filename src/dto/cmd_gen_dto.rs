@@ -4,7 +4,7 @@ use std::fmt;
 
 pub enum GenerateType {
     // Grupos compostos
-    Module,   // Gera apenas config.module.pas + config.handle.pas
+    Module,   // Gera apenas module, handler
     Scaffold, // Gera controller, service, repository, interface, infra
     All,      // Gera tudo acima
 

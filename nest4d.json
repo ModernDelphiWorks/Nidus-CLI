@@ -3,10 +3,12 @@
   "description": "Nest4D Framework for Delphi",
   "version": "master",
   "homepage": "https://www.nest4f.com.br",
-  "mainsrc": "./dependencies",
+  "srcmain": "src/",
   "projects": [],
+  "download": "https://github.com/ModernDelphiWorks/nest4d.git",
   "dependencies": {
-    "https://github.com/HashLoad/DBEBr.git": "master",
-    "https://github.com/HashLoad/DBCBr.git": "master"
+    "https://github.com/HashLoad/Horse.git": "",
+    "https://github.com/ModernDelphiWorks/evolution4d.git": "",
+    "https://github.com/ModernDelphiWorks/injector4d.git": ""
   }
 }

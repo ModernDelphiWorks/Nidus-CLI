@@ -1,0 +1,79 @@
+unit NfeService;
+
+interface
+
+uses
+  SysUtils,
+  System.Evolution.ResultPair,
+  NfeRepository,
+  NfeInterface;
+
+type
+  TNfeService = class(TInterfacedObject, I$mod)
+  private
+    FRepository: TNfeRepository;
+  public
+    constructor Create(const ARepository: TNfeRepository);
+    destructor Destroy; override;
+    function Find: TResultPair<String, Exception>;
+    function Insert(const AJson: String): TResultPair<String, Exception>;
+    function Update(const AJson: String): TResultPair<String, Exception>;
+    function Delete: TResultPair<String, Exception>;
+  end;
+
+implementation
+
+{ TNfeService }
+
+constructor TNfeService.Create(const ARepository: TNfeRepository);
+begin
+  FRepository := ARepository;
+end;
+
+destructor TNfeService.Destroy;
+begin
+  FRepository.Free;
+  inherited;
+end;
+
+function TNfeService.Delete: TResultPair<String, Exception>;
+begin
+  try
+    Result.Success(FRepository.Delete);
+  except
+    on E: Exception do
+      Result.Failure(E);
+  end;
+end;
+
+function TNfeService.Find: TResultPair<String, Exception>;
+begin
+  try
+    Result.Success(FRepository.Find);
+  except
+    on E: Exception do
+      Result.Failure(E);
+  end;
+end;
+
+function TNfeService.Insert(const AJson: String): TResultPair<String, Exception>;
+begin
+  try
+    Result.Success(FRepository.Insert(AJson));
+  except
+    on E: Exception do
+      Result.Failure(E);
+  end;
+end;
+
+function TNfeService.Update(const AJson: String): TResultPair<String, Exception>;
+begin
+  try
+    Result.Success(FRepository.Update(AJson));
+  except
+    on E: Exception do
+      Result.Failure(E);
+  end;
+end;
+
+end.

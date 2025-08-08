@@ -1,15 +1,20 @@
-unit app.module;
+unit AppModule;
 
 interface
 
 uses
-  app.route,
-  nest4d.module;
+  nest4d.module,
+  ConfigModule,
+  ConfigHandler,
+  NfeModule,
+  NfeHandler,
+  XmlModule,
+  XmlHandler;
 
 type
   TGardNFeMiddleware = class(TRouteMiddleware)
   public
-    class function Call(const AReq: IRouteRequest): Boolean; override;
+    function Call(const AReq: IRouteRequest): Boolean; override;
   end;
 
   TAppModule = class(TModule)
@@ -44,21 +49,21 @@ end;
 
 function TAppModule.RouteHandlers: TRouteHandlers;
 begin
-  // Inject Config - When registered as singleton, this class can be accessed globally throughout the application
-  Result := [{TMainRouteHandler}];
+  Result := [TConfigRouteHandler,
+             TNfeRouteHandler,
+             TXmlRouteHandler];
 end;
 
 function TAppModule.Routes: TRoutes;
 begin
-  // Here we define the route and which module will be called
-  // Format: RouteModule('base_path', ModuleClass)
-  // This will handle all requests to /api/v1/main using TMainModule
-  Result := [{RouteModule('/api/v1/main', TMainModule)}];
+  Result := [RouteModule('/api/v1/config', TConfigModule),
+             RouteModule('/api/v1/nfe', TNfeModule),
+             RouteModule('/api/v1/xml', TXmlModule)];
 end;
 
 { TGardNFeMiddleware }
 
-class function TGardNFeMiddleware.Call(const AReq: IRouteRequest): Boolean;
+function TGardNFeMiddleware.Call(const AReq: IRouteRequest): Boolean;
 begin
   Result := True;
 end;

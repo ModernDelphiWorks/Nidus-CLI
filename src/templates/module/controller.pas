@@ -1,38 +1,62 @@
-unit $mod$Controller;
+unit <mod>Controller;
 
 interface
 
 uses
-  $mod$Service;
+  System.SysUtils,
+  System.Evolution.ResultPair,
+  <mod>Service,
+  <mod>Interface;
 
 type
-  T$mod$Controller = class
+  T<mod>Controller = class(TInterfacedObject, I<mod>)
   private
-    F$mod$Service: T$mod$Service;
+    FService: T<mod>Service;
   public
-    constructor Create;
+    constructor Create(const AReq: T<mod>Service);
     destructor Destroy; override;
-    function Register$mod$(const AName, AEmail: String): Boolean;
+    function Find: TResultPair<String, Exception>;
+    function Insert(const AJson: String): TResultPair<String, Exception>;
+    function Update(const AJson: String): TResultPair<String, Exception>;
+    function Delete: TResultPair<String, Exception>;
   end;
 
 implementation
 
-{{ T$mod$Controller }}
+uses
+  nest4d.horse;
 
-constructor T$mod$Controller.Create;
+{ T<mod>Controller }
+
+constructor T<mod>Controller.Create(const AReq: T<mod>Service);
 begin
-  F$mod$Service := T$mod$Service.Create;
+  FService := AReq;
 end;
 
-destructor T$mod$Controller.Destroy;
+destructor T<mod>Controller.Destroy;
 begin
-  F$mod$Service.Free;
+  FService.Free;
   inherited;
 end;
 
-function T$mod$Controller.Register$mod$(const AName, AEmail: String): Boolean;
+function T<mod>Controller.Delete: TResultPair<String, Exception>;
 begin
-  Result := F$mod$Service.Create$mod$(AName, AEmail);
+  Result := FService.Delete;
+end;
+
+function T<mod>Controller.Find: TResultPair<String, Exception>;
+begin
+  Result := FService.Find;
+end;
+
+function T<mod>Controller.Insert(const AJson: String): TResultPair<String, Exception>;
+begin
+  Result := FService.Insert(AJson);
+end;
+
+function T<mod>Controller.Update(const AJson: String): TResultPair<String, Exception>;
+begin
+  Result := FService.Update(AJson);
 end;
 
 end.

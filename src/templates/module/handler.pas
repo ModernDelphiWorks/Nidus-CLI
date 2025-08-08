@@ -1,18 +1,18 @@
-unit config.route.handler;
+unit <mod>Handler;
 
 interface
 
 uses
-  IniFiles,
-  core.include,
-  core.types,
-  core.exception,
-  core.constantes,
-  dmfbr.modular,
-  dmfbr.route.handler.horse;
+  System.SysUtils,
+  Horse,
+  System.Evolution.ResultPair,
+  nest4d,
+  nest4d.route.handler.horse;
 
 type
-  TConfigRouteHandler = class(TRouteHandlerHorse)
+  T<mod>RouteHandler = class(TRouteHandlerHorse)
+  private
+    const CONTENTTYPE_JSON = 'application/json; charset=UTF-8';
   protected
     procedure RegisterRoutes; override;
   public
@@ -26,102 +26,99 @@ type
 implementation
 
 uses
-  app.route,
-  app.module,
-  horse.modular,
-  config.controller;
+  nest4d.horse,
+  <mod>Controller;
 
-{ TEmpresaRouteHandler }
+{ T<mod>RouteHandler }
 
-procedure TConfigRouteHandler.RegisterRoutes;
+procedure T<mod>RouteHandler.RegisterRoutes;
 begin
   inherited;
-  RouteGet(Rota.Configurar, Find);
-  RoutePost(Rota.Configurar, Insert);
-  RoutePut(Rota.Configurar, Update);
-  RouteDelete(Rota.Configurar, Delete);
+  RouteGet('/$mod', Find);
+  RoutePost('/$mod', Insert);
+  RoutePut('/$mod', Update);
+  RouteDelete('/$mod', Delete);
 end;
 
-constructor TConfigRouteHandler.Create;
+constructor T<mod>RouteHandler.Create;
 begin
   inherited;
-
 end;
 
-procedure TConfigRouteHandler.Delete(Req: THorseRequest; Res: THorseResponse);
+procedure T<mod>RouteHandler.Delete(Req: THorseRequest; Res: THorseResponse);
 var
-  LResult: TConfigResponse;
+  LResult: TResultPair<String, Exception>;
 begin
-  LResult := Modular.Get<TConfigController>.Delete;
-  LResult.TryException(
+  LResult := GetNest4D.Get<T<mod>Controller>.Delete;
+  LResult.When(
     procedure (Msg: String)
     begin
       Res.Send(Msg).ContentType(CONTENTTYPE_JSON).Status(200);
     end,
-    procedure (Error: ERequestException)
+    procedure (Error: Exception)
     begin
       try
-        raise ERequestException.Create(Error.Message, Error.Status);
+        raise Exception.Create(Error.Message);
       finally
         Error.Free;
       end;
     end);
 end;
 
-procedure TConfigRouteHandler.Find(Req: THorseRequest; Res: THorseResponse);
+procedure T<mod>RouteHandler.Find(Req: THorseRequest; Res: THorseResponse);
 var
-  LResult: TConfigResponse;
+  LResult: TResultPair<String, Exception>;
 begin
-  LResult := Modular.Get<TConfigController>.Find;
-  LResult.TryException(
+  LResult := GetNest4D.Get<T<mod>Controller>.Find;
+  LResult.When(
     procedure (Json: String)
     begin
       Res.Send(Json).ContentType(CONTENTTYPE_JSON).Status(200);
     end,
-    procedure (Error: ERequestException)
+    procedure (Error: Exception)
     begin
       try
-        raise ERequestException.Create(Error.Message, Error.Status);
+        raise Exception.Create(Error.Message);
       finally
         Error.Free;
       end;
     end);
 end;
 
-procedure TConfigRouteHandler.Insert(Req: THorseRequest; Res: THorseResponse);
+procedure T<mod>RouteHandler.Insert(Req: THorseRequest; Res: THorseResponse);
 var
-  LResult: TConfigResponse;
+  LResult: TResultPair<String, Exception>;
 begin
-  LResult := Modular.Get<TConfigController>.Insert(Req.Body);
-  LResult.TryException(
+  LResult := GetNest4D.Get<T<mod>Controller>.Insert(Req.Body);
+  LResult.When(
     procedure (Msg: String)
     begin
       Res.Send(Msg).ContentType(CONTENTTYPE_JSON).Status(200);
     end,
-    procedure (Error: ERequestException)
+    procedure (Error: Exception)
     begin
       try
-        raise ERequestException.Create(Error.Message, Error.Status);
+        raise Exception.Create(Error.Message);
       finally
         Error.Free;
       end;
     end);
 end;
 
-procedure TConfigRouteHandler.Update(Req: THorseRequest; Res: THorseResponse);
+procedure T<mod>RouteHandler.Update(Req: THorseRequest; Res: THorseResponse);
 var
-  LResult: TConfigResponse;
+  LResult: TResultPair<String, Exception>;
 begin
-  LResult := Modular.Get<TConfigController>.Update(Req.Body);
-  LResult.TryException(
+  LResult := GetNest4D.Get<T<mod>Controller>.Update(Req.Body);
+  LResult.When(
     procedure (Msg: String)
     begin
       Res.Send(Msg).ContentType(CONTENTTYPE_JSON).Status(200);
     end,
-    procedure (Error: ERequestException)
+    procedure (Error: Exception)
     begin
       try
-        raise ERequestException.Create(Error.Message, Error.Status);
+        raise Exception.Create(Error.Message);
       finally
         Error.Free;
       end;
@@ -129,6 +126,3 @@ begin
 end;
 
 end.
-
-
-

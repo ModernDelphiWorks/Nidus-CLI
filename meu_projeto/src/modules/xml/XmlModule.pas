@@ -1,0 +1,45 @@
+unit Xmlmodule;
+
+interface
+
+uses
+  Generics.Collections,
+  nest4d.module,
+  nest4d,
+  Xmlservice,
+  Xmlrepository,
+  Xmlcontroller,
+  Xmlinfra;
+
+type
+  TXmlModule = class(TModule)
+  public
+    constructor Create; override;
+    function Binds: TBinds; override;
+    function Imports: TImports; override;
+  end;
+
+implementation
+
+{ TXmlModule }
+
+function TXmlModule.Binds: TBinds;
+begin
+  Result := [Bind<TXmlInfra>.Factory,
+             Bind<TXmlRepository>.Factory,
+             Bind<TXmlService>.Factory,
+             Bind<TXmlController>.Singleton];
+end;
+
+constructor TXmlModule.Create;
+begin
+
+  inherited;
+end;
+
+function TXmlModule.Imports: TImports;
+begin
+  Result := [];
+end;
+
+end.
