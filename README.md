@@ -29,7 +29,7 @@ cargo install nest4d-cli
 
 ### Installation via Binary
 
-Download the latest binary from the [releases page](https://github.com/your-repo/nest4d-cli/releases) and add it to your PATH.
+Download the latest binary from the [releases page](https://github.com/ModernDelphiWorks/nest4d-cli/releases) and add it to your PATH.
 
 ## 🚀 Quick Start
 
