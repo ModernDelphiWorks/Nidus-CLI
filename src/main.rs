@@ -2,6 +2,7 @@ use clap::builder::styling::{AnsiColor, Effects};
 use clap::builder::Styles;
 use clap::{ArgMatches, Command};
 use colored::Colorize;
+use log::info;
 use nest4d::commands::command_trait::cmd_trait::ICommand;
 use nest4d::commands::options::{
     option_info::CommandInfo, option_pattern::CommandPattern, option_template::CommandTemplate,
@@ -13,12 +14,19 @@ use nest4d::{
         cmd_new::CommandNew, cmd_update::CommandUpdate,
     },
     core::core_utils::utils,
+    init_logging,
 };
 use std::env;
 
+
 fn main() {
+    // Inicializa logging
+    init_logging();
+    
     // Debug detail
     env::set_var("RUST_BACKTRACE", "1");
+    
+    info!("🚀 Iniciando nest4d-cli v{}", utils::version_str());
 
     let styles: Styles = Styles::styled()
         .header(AnsiColor::Green.on_default() | Effects::BOLD)
