@@ -27,7 +27,7 @@ pub mod project {
 
         // DPR
         let dpr_content =
-            include_str!("../templates/project/project.dpr").replace("<project>", project_name);
+            include_str!("../templates/project/project.dpr").replace("{{project}}", project_name);
         created_files.push(utils::write_file_with_stats(
             &root.join(format!("{}.dpr", project_name)),
             &dpr_content,

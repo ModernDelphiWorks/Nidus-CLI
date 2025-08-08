@@ -1,4 +1,4 @@
-unit <mod>Infra;
+unit {{mod}}Infra;
 
 interface
 
@@ -7,10 +7,10 @@ uses
   Generics.Collections,
   System.Evolution.Std,
   System.Evolution.Threading,
-  <mod>Interface;
+  {{mod}}Interface;
 
 type
-  T<mod>Infra = class
+  T{{mod}}Infra = class
   private
   public
     constructor Create();
@@ -22,20 +22,20 @@ type
 
 implementation
 
-{ T<mod>Infra }
+{ T{{mod}}Infra }
 
-constructor T<mod>Infra.Create();
+constructor T{{mod}}Infra.Create();
 begin
 
 end;
 
-destructor T<mod>Infra.Destroy;
+destructor T{{mod}}Infra.Destroy;
 begin
 
   inherited;
 end;
 
-function T<mod>Infra.FromJson<T>(const AJson: String): T;
+function T{{mod}}Infra.FromJson<T>(const AJson: String): T;
 var
   LFuture: TFuture;
 begin
@@ -49,7 +49,7 @@ begin
     raise Exception.Create(LFuture.Err);
 end;
 
-function T<mod>Infra.ToJson<T>(const AObject: T): String;
+function T{{mod}}Infra.ToJson<T>(const AObject: T): String;
 var
   LFuture: TFuture;
 begin

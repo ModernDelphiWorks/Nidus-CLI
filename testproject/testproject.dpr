@@ -1,4 +1,4 @@
-program {{project}};
+program testproject;
 
 {$APPTYPE CONSOLE}
 
@@ -9,7 +9,9 @@ uses
   Horse,
   nest4d,
   nest4d.horse,
-  AppModule in 'src\AppModule.pas';
+  AppModule in 'src\AppModule.pas',
+  UserModule in 'src\modules\user\UserModule.pas',
+  UserHandler in 'src\modules\user\UserHandler.pas';
 
 begin
   THorse.Use( Nest4D_Horse(TAppModule.Create) );

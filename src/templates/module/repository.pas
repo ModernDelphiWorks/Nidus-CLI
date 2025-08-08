@@ -1,18 +1,18 @@
-unit <mod>Repository;
+unit {{mod}}Repository;
 
 interface
 
 uses
   System.SysUtils,
-  <mod>Infra,
-  <mod>Interface;
+  {{mod}}Infra,
+  {{mod}}Interface;
 
 type
-  T<mod>Repository = class
+  T{{mod}}Repository = class
   private
-    FInfra: T<mod>Infra;
+    FInfra: T{{mod}}Infra;
   public
-    constructor Create(const AInfra: T<mod>Infra);
+    constructor Create(const AInfra: T{{mod}}Infra);
     destructor Destroy; override;
     function Find: String;
     function Insert(const AJson: String): String;
@@ -22,20 +22,20 @@ type
 
 implementation
 
-{ T<mod>Repository }
+{ T{{mod}}Repository }
 
-constructor T<mod>Repository.Create(const AInfra: T<mod>Infra);
+constructor T{{mod}}Repository.Create(const AInfra: T{{mod}}Infra);
 begin
   FInfra := AInfra;
 end;
 
-destructor T<mod>Repository.Destroy;
+destructor T{{mod}}Repository.Destroy;
 begin
   FInfra.Free;
   inherited;
 end;
 
-function T<mod>Repository.Delete: String;
+function T{{mod}}Repository.Delete: String;
 begin
   try
     Result := 'sucesso!';
@@ -44,7 +44,7 @@ begin
   end;
 end;
 
-function T<mod>Repository.Find: String;
+function T{{mod}}Repository.Find: String;
 begin
   try
     Result := 'sucesso!';
@@ -53,7 +53,7 @@ begin
   end;
 end;
 
-function T<mod>Repository.Insert(const AJson: String): String;
+function T{{mod}}Repository.Insert(const AJson: String): String;
 begin
   try
     Result := 'sucesso!';
@@ -62,7 +62,7 @@ begin
   end;
 end;
 
-function T<mod>Repository.Update(const AJson: String): String;
+function T{{mod}}Repository.Update(const AJson: String): String;
 begin
   try
     Result := 'sucesso!';

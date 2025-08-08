@@ -36,7 +36,7 @@ Download the latest binary from the [releases page](https://github.com/your-repo
 ### 1. Create a new project
 
 ```bash
-nest4d new --project MyApp --path ./
+nest4d new MyApp --path ./
 ```
 
 ### 2. Install dependencies
@@ -65,11 +65,13 @@ nest4d gen repository User
 ### `new` - Create new project
 
 ```bash
-nest4d new --project <name> --path <path> [--with-tests]
+nest4d new <name> [--path <path>] [--with-tests]
 ```
 
+**Arguments:**
+- `<name>`: Project name (required)
+
 **Options:**
-- `--project, -p`: Project name
 - `--path`: Path where to create the project (must start with `./`)
 - `--with-tests`: Include test structure
 
@@ -176,6 +178,40 @@ The `nest4d.json` file contains the project configurations:
   "download": "https://github.com/ModernDelphiWorks/nest4d.git",
   "dependencies": [
     "https://github.com/HashLoad/horse.git",
+
+## 🎨 Template System
+
+Nest4D CLI uses a standardized template system with the following features:
+
+### Template Variables
+
+All templates use the `{{variable}}` syntax for variable substitution:
+
+- `{{project}}`: Project name (used in project templates)
+- `{{mod}}`: Module name (used in module templates)
+
+### Example Template Usage
+
+```pascal
+unit {{mod}}Module;
+
+interface
+
+uses
+  {{mod}}Controller,
+  {{mod}}Service;
+
+type
+  T{{mod}}Module = class
+  end;
+
+end.
+```
+
+### Supported Templates
+
+- **Project Templates**: `project.dpr`, `AppModule.pas`
+- **Module Templates**: `module.pas`, `controller.pas`, `service.pas`, `repository.pas`, `interface.pas`, `infra.pas`, `handler.pas`
     "https://github.com/HashLoad/evolution4d.git",
     "https://github.com/HashLoad/injector4d.git"
   ]
@@ -203,6 +239,25 @@ cargo test integration
 # Run with detailed output
 cargo test -- --nocapture
 ```
+
+## 🆕 Recent Improvements
+
+### Version 0.1.0
+
+- ✅ **Simplified Command Syntax**: Clean and intuitive `new` command
+  - Usage: `nest4d new MyApp`
+
+- ✅ **Standardized Template System**: All templates now use `{{variable}}` syntax
+  - Consistent variable substitution across all templates
+  - Better maintainability and extensibility
+
+- ✅ **Dynamic Version Management**: Version is now read from `Cargo.toml`
+  - No more hardcoded versions in the code
+  - Automatic synchronization between package and CLI version
+
+- ✅ **Enhanced Documentation**: Complete README with examples and usage
+
+- ✅ **Comprehensive Testing**: Integration and validation tests included
 
 ## 🤝 Contributing
 

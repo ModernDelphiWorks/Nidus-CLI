@@ -58,7 +58,7 @@ pub mod module {
                 _ => continue,
             };
 
-            let content = template.replace("<mod>", &mod_camel_case);
+            let content = template.replace("{{mod}}", &mod_camel_case);
 
             created_files.push(utils::write_file_with_stats(&filepath, &content)?);
         }

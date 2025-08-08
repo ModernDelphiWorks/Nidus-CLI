@@ -1,14 +1,16 @@
-unit ConfigHandler;
+unit UserHandler;
 
 interface
 
 uses
+  System.SysUtils,
+  Horse,
   System.Evolution.ResultPair,
   nest4d,
   nest4d.route.handler.horse;
 
 type
-  TConfigRouteHandler = class(TRouteHandlerHorse)
+  TUserRouteHandler = class(TRouteHandlerHorse)
   private
     const CONTENTTYPE_JSON = 'application/json; charset=UTF-8';
   protected
@@ -25,29 +27,29 @@ implementation
 
 uses
   nest4d.horse,
-  ConfigController;
+  UserController;
 
-{ TConfigRouteHandler }
+{ TUserRouteHandler }
 
-procedure TConfigRouteHandler.RegisterRoutes;
+procedure TUserRouteHandler.RegisterRoutes;
 begin
   inherited;
-  RouteGet('/$mod', Find);
-  RoutePost('/$mod', Insert);
-  RoutePut('/$mod', Update);
-  RouteDelete('/$mod', Delete);
+  RouteGet('/User', Find);
+  RoutePost('/User', Insert);
+  RoutePut('/User', Update);
+  RouteDelete('/User', Delete);
 end;
 
-constructor TConfigRouteHandler.Create;
+constructor TUserRouteHandler.Create;
 begin
   inherited;
 end;
 
-procedure TConfigRouteHandler.Delete(Req: THorseRequest; Res: THorseResponse);
+procedure TUserRouteHandler.Delete(Req: THorseRequest; Res: THorseResponse);
 var
   LResult: TResultPair<String, Exception>;
 begin
-  LResult := GetNest4D.Get<TConfigController>.Delete;
+  LResult := GetNest4D.Get<TUserController>.Delete;
   LResult.When(
     procedure (Msg: String)
     begin
@@ -63,11 +65,11 @@ begin
     end);
 end;
 
-procedure TConfigRouteHandler.Find(Req: THorseRequest; Res: THorseResponse);
+procedure TUserRouteHandler.Find(Req: THorseRequest; Res: THorseResponse);
 var
   LResult: TResultPair<String, Exception>;
 begin
-  LResult := GetNest4D.Get<TConfigController>.Find;
+  LResult := GetNest4D.Get<TUserController>.Find;
   LResult.When(
     procedure (Json: String)
     begin
@@ -83,11 +85,11 @@ begin
     end);
 end;
 
-procedure TConfigRouteHandler.Insert(Req: THorseRequest; Res: THorseResponse);
+procedure TUserRouteHandler.Insert(Req: THorseRequest; Res: THorseResponse);
 var
-  LResult: TResultPair<String, ERequestException>;
+  LResult: TResultPair<String, Exception>;
 begin
-  LResult := GetNest4D.Get<TConfigController>.Insert(Req.Body);
+  LResult := GetNest4D.Get<TUserController>.Insert(Req.Body);
   LResult.When(
     procedure (Msg: String)
     begin
@@ -103,11 +105,11 @@ begin
     end);
 end;
 
-procedure TConfigRouteHandler.Update(Req: THorseRequest; Res: THorseResponse);
+procedure TUserRouteHandler.Update(Req: THorseRequest; Res: THorseResponse);
 var
   LResult: TResultPair<String, Exception>;
 begin
-  LResult := GetNest4D.Get<TConfigController>.Update(Req.Body);
+  LResult := GetNest4D.Get<TUserController>.Update(Req.Body);
   LResult.When(
     procedure (Msg: String)
     begin

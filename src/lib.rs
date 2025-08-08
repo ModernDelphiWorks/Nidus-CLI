@@ -2,6 +2,7 @@ pub mod commands;
 pub mod core;
 pub mod dto;
 pub mod error;
+pub mod templates;
 pub mod validation;
 
 // Re-export principais tipos

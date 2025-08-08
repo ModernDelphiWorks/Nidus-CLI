@@ -1,4 +1,4 @@
-unit <mod>Interface;
+unit {{mod}}Interface;
 
 interface
 
@@ -8,7 +8,7 @@ uses
 
 
 type
-  I<mod> = interface
+  I{{mod}} = interface
     ['{????????-????-????-????-????????????}']
     function Find: TResultPair<String, Exception>;
     function Insert(const AJson: String): TResultPair<String, Exception>;

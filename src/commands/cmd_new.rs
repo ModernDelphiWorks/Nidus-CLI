@@ -26,10 +26,10 @@ impl ICommand for CommandNew {
             .about("🆕 Create a new Nest4d project")
             .arg(
                 Arg::new("project_name")
-                    .long("project")
                     .value_name("NAME")
                     .help("Name of the project to be created")
-                    .required(true),
+                    .required(true)
+                    .index(1),
             )
             .arg(
                 Arg::new("path")

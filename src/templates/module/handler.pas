@@ -1,4 +1,4 @@
-unit <mod>Handler;
+unit {{mod}}Handler;
 
 interface
 
@@ -10,7 +10,7 @@ uses
   nest4d.route.handler.horse;
 
 type
-  T<mod>RouteHandler = class(TRouteHandlerHorse)
+  T{{mod}}RouteHandler = class(TRouteHandlerHorse)
   private
     const CONTENTTYPE_JSON = 'application/json; charset=UTF-8';
   protected
@@ -27,29 +27,29 @@ implementation
 
 uses
   nest4d.horse,
-  <mod>Controller;
+  {{mod}}Controller;
 
-{ T<mod>RouteHandler }
+{ T{{mod}}RouteHandler }
 
-procedure T<mod>RouteHandler.RegisterRoutes;
+procedure T{{mod}}RouteHandler.RegisterRoutes;
 begin
   inherited;
-  RouteGet('/$mod', Find);
-  RoutePost('/$mod', Insert);
-  RoutePut('/$mod', Update);
-  RouteDelete('/$mod', Delete);
+  RouteGet('/{{mod}}', Find);
+  RoutePost('/{{mod}}', Insert);
+  RoutePut('/{{mod}}', Update);
+  RouteDelete('/{{mod}}', Delete);
 end;
 
-constructor T<mod>RouteHandler.Create;
+constructor T{{mod}}RouteHandler.Create;
 begin
   inherited;
 end;
 
-procedure T<mod>RouteHandler.Delete(Req: THorseRequest; Res: THorseResponse);
+procedure T{{mod}}RouteHandler.Delete(Req: THorseRequest; Res: THorseResponse);
 var
   LResult: TResultPair<String, Exception>;
 begin
-  LResult := GetNest4D.Get<T<mod>Controller>.Delete;
+  LResult := GetNest4D.Get<T{{mod}}Controller>.Delete;
   LResult.When(
     procedure (Msg: String)
     begin
@@ -65,11 +65,11 @@ begin
     end);
 end;
 
-procedure T<mod>RouteHandler.Find(Req: THorseRequest; Res: THorseResponse);
+procedure T{{mod}}RouteHandler.Find(Req: THorseRequest; Res: THorseResponse);
 var
   LResult: TResultPair<String, Exception>;
 begin
-  LResult := GetNest4D.Get<T<mod>Controller>.Find;
+  LResult := GetNest4D.Get<T{{mod}}Controller>.Find;
   LResult.When(
     procedure (Json: String)
     begin
@@ -85,11 +85,11 @@ begin
     end);
 end;
 
-procedure T<mod>RouteHandler.Insert(Req: THorseRequest; Res: THorseResponse);
+procedure T{{mod}}RouteHandler.Insert(Req: THorseRequest; Res: THorseResponse);
 var
   LResult: TResultPair<String, Exception>;
 begin
-  LResult := GetNest4D.Get<T<mod>Controller>.Insert(Req.Body);
+  LResult := GetNest4D.Get<T{{mod}}Controller>.Insert(Req.Body);
   LResult.When(
     procedure (Msg: String)
     begin
@@ -105,11 +105,11 @@ begin
     end);
 end;
 
-procedure T<mod>RouteHandler.Update(Req: THorseRequest; Res: THorseResponse);
+procedure T{{mod}}RouteHandler.Update(Req: THorseRequest; Res: THorseResponse);
 var
   LResult: TResultPair<String, Exception>;
 begin
-  LResult := GetNest4D.Get<T<mod>Controller>.Update(Req.Body);
+  LResult := GetNest4D.Get<T{{mod}}Controller>.Update(Req.Body);
   LResult.When(
     procedure (Msg: String)
     begin

@@ -1,19 +1,19 @@
-unit <mod>Service;
+unit {{mod}}Service;
 
 interface
 
 uses
   System.SysUtils,
   System.Evolution.ResultPair,
-  <mod>Repository,
-  <mod>Interface;
+  {{mod}}Repository,
+  {{mod}}Interface;
 
 type
-  T<mod>Service = class(TInterfacedObject, I<mod>)
+  T{{mod}}Service = class(TInterfacedObject, I{{mod}})
   private
-    FRepository: T<mod>Repository;
+    FRepository: T{{mod}}Repository;
   public
-    constructor Create(const ARepository: T<mod>Repository);
+    constructor Create(const ARepository: T{{mod}}Repository);
     destructor Destroy; override;
     function Find: TResultPair<String, Exception>;
     function Insert(const AJson: String): TResultPair<String, Exception>;
@@ -23,20 +23,20 @@ type
 
 implementation
 
-{ T<mod>Service }
+{ T{{mod}}Service }
 
-constructor T<mod>Service.Create(const ARepository: T<mod>Repository);
+constructor T{{mod}}Service.Create(const ARepository: T{{mod}}Repository);
 begin
   FRepository := ARepository;
 end;
 
-destructor T<mod>Service.Destroy;
+destructor T{{mod}}Service.Destroy;
 begin
   FRepository.Free;
   inherited;
 end;
 
-function T<mod>Service.Delete: TResultPair<String, Exception>;
+function T{{mod}}Service.Delete: TResultPair<String, Exception>;
 begin
   try
     Result.Success(FRepository.Delete);
@@ -46,7 +46,7 @@ begin
   end;
 end;
 
-function T<mod>Service.Find: TResultPair<String, Exception>;
+function T{{mod}}Service.Find: TResultPair<String, Exception>;
 begin
   try
     Result.Success(FRepository.Find);
@@ -56,7 +56,7 @@ begin
   end;
 end;
 
-function T<mod>Service.Insert(const AJson: String): TResultPair<String, Exception>;
+function T{{mod}}Service.Insert(const AJson: String): TResultPair<String, Exception>;
 begin
   try
     Result.Success(FRepository.Insert(AJson));
@@ -66,7 +66,7 @@ begin
   end;
 end;
 
-function T<mod>Service.Update(const AJson: String): TResultPair<String, Exception>;
+function T{{mod}}Service.Update(const AJson: String): TResultPair<String, Exception>;
 begin
   try
     Result.Success(FRepository.Update(AJson));

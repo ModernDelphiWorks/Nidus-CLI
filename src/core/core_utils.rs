@@ -12,7 +12,7 @@ pub mod utils {
     }
 
     pub fn version_str() -> &'static str {
-        "v0.0.1"
+        env!("CARGO_PKG_VERSION")
     }
 
     pub fn get_size_file(path: &str) -> Result<String> {

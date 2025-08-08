@@ -11,7 +11,7 @@ use nest4d::dto::config_global_dto::ConfigGlobalDTO;
 use nest4d::{
     commands::{
         cmd_add_paths::CommandAddPaths, cmd_gen::CommandGen, cmd_install::CommandInstall,
-        cmd_new::CommandNew, cmd_update::CommandUpdate,
+        cmd_new::CommandNew, cmd_template::CommandTemplate as CmdTemplate, cmd_update::CommandUpdate,
     },
     core::core_utils::utils,
     init_logging,
@@ -55,6 +55,7 @@ fn main() {
         .subcommand(CommandNew::command())
         .subcommand(CommandGen::command())
         .subcommand(CommandInstall::command())
+        .subcommand(CmdTemplate::command())
         .subcommand(CommandUpdate::command());
 
     // Match
@@ -72,6 +73,7 @@ fn main() {
             Some(("add-paths", matches)) => CommandAddPaths::execute(&mut config_global, matches),
             Some(("new", matches)) => CommandNew::execute(&mut config_global, matches),
             Some(("gen", matches)) => CommandGen::execute(&mut config_global, matches),
+            Some(("template", matches)) => CmdTemplate::execute(&mut config_global, matches),
             Some(("update", matches)) => CommandUpdate::execute(&mut config_global, matches),
             _ => unreachable!("clap should ensure we don't get here"),
         };
