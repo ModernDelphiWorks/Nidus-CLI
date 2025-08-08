@@ -2,8 +2,6 @@
 
 🚀 **Nest4D Framework for Delphi** - A modern command-line tool for rapid Delphi application development inspired by NestJS.
 
-> **v1.0.1-test** - Testing automated release workflow
-
 ## 📋 Table of Contents
 
 - [Installation](#-installation)
