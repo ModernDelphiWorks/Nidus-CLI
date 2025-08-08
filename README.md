@@ -212,10 +212,6 @@ end.
 
 - **Project Templates**: `project.dpr`, `AppModule.pas`
 - **Module Templates**: `module.pas`, `controller.pas`, `service.pas`, `repository.pas`, `interface.pas`, `infra.pas`, `handler.pas`
-    "https://github.com/HashLoad/evolution4d.git",
-    "https://github.com/HashLoad/injector4d.git"
-  ]
-}
 ```
 
 ### Adding dependencies
