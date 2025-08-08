@@ -15,7 +15,10 @@
             "type": "lldb",
             "request": "launch",
             "program": "${workspaceFolder}/target/release/nest4d.exe",
-            "args": [],
+            "args": [
+                "new",
+                "meu-projeto"
+            ],
             "cwd": "${workspaceFolder}",
             "preLaunchTask": "cargo build release"
         }

@@ -38,6 +38,40 @@
             "options": {
                 "cwd": "${workspaceFolder}"
             },
+        },
+        {
+            "label": "release and publish to GitHub",
+            "type": "shell",
+            "command": "powershell",
+            "args": [
+                "-Command",
+                "Write-Host 'Building release...' -ForegroundColor Yellow; cargo build --release; if ($LASTEXITCODE -eq 0) { Write-Host 'Build successful! Preparing release...' -ForegroundColor Green; git add .; $version = Read-Host 'Enter version number (e.g., 1.0.0)'; git commit -m \"Release v$version\"; git tag v$version; Write-Host 'Pushing to https://github.com/ModernDelphiWorks/nest4d-cli...' -ForegroundColor Cyan; git push origin main --tags; Write-Host 'Release v$version published successfully!' -ForegroundColor Green; } else { Write-Host 'Build failed, aborting release' -ForegroundColor Red }"
+            ],
+            "group": "build",
+            "presentation": {
+                "echo": true,
+                "reveal": "always",
+                "focus": true,
+                "panel": "shared"
+            },
+            "problemMatcher": ["$rustc"]
+        },
+        {
+            "label": "prepare release (build only)",
+            "type": "shell",
+            "command": "powershell",
+            "args": [
+                "-Command",
+                "Write-Host 'Building release version...' -ForegroundColor Yellow; cargo build --release; if ($LASTEXITCODE -eq 0) { Write-Host 'Release build successful!' -ForegroundColor Green; Write-Host 'Executable location: target/release/nest4d.exe' -ForegroundColor Cyan; Write-Host 'Ready to commit and push to https://github.com/ModernDelphiWorks/nest4d-cli' -ForegroundColor Yellow; git status; } else { Write-Host 'Build failed!' -ForegroundColor Red }"
+            ],
+            "group": "build",
+            "presentation": {
+                "echo": true,
+                "reveal": "always",
+                "focus": false,
+                "panel": "shared"
+            },
+            "problemMatcher": ["$rustc"]
         }
     ]
 }

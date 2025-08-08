@@ -2,6 +2,42 @@ pub mod project {
     use std::{fs, io, path::PathBuf};
 
     use crate::core::core_utils::utils;
+    use crate::templates::template_manager::TemplateManager;
+    use crate::error::CliError;
+
+    /// Obtém o conteúdo de um template de projeto de forma inteligente (disco primeiro, depois embutido)
+    fn get_project_template_content(template_manager: &mut TemplateManager, template_name: &str) -> Result<String, CliError> {
+        // Tenta obter template customizado primeiro
+        if let Ok(template) = template_manager.get_template(&format!("project-{}", template_name)) {
+            if let Some(file) = template.files.iter().find(|f| f.name.contains(template_name)) {
+                return Ok(file.content.clone());
+            }
+        }
+        
+        // Fallback para templates embutidos
+        let builtin_template = match template_name {
+            "project" => include_str!("../templates/project/project.dpr"),
+            "app_module" => include_str!("../templates/project/app_module.pas"),
+            _ => return Err(CliError::ValidationError(format!("Unknown project template: {}", template_name))),
+        };
+        
+        Ok(builtin_template.to_string())
+    }
+
+    /// Obtém o diretório de templates
+    fn get_templates_directory() -> Result<PathBuf, CliError> {
+        let home = std::env::var("HOME")
+            .or_else(|_| std::env::var("USERPROFILE"))
+            .map_err(|_| CliError::ValidationError("Could not find home directory".to_string()))?;
+        
+        let templates_dir = PathBuf::from(home).join(".nest4d").join("templates");
+        
+        if !templates_dir.exists() {
+            fs::create_dir_all(&templates_dir).map_err(|e| CliError::IoError(e))?;
+        }
+        
+        Ok(templates_dir)
+    }
 
     /// Gera a estrutura inicial de um projeto Nest4d.
     ///
@@ -25,18 +61,31 @@ pub mod project {
         let mut created_files: Vec<(PathBuf, u64, String)> = Vec::new();
         let mut created_dirs: Vec<PathBuf> = Vec::new();
 
-        // DPR
-        let dpr_content =
-            include_str!("../templates/project/project.dpr").replace("{{project}}", project_name);
+        // Inicializa o TemplateManager
+        let templates_dir = get_templates_directory().map_err(|e| {
+            io::Error::new(io::ErrorKind::Other, format!("Template directory error: {}", e))
+        })?;
+        let mut template_manager = TemplateManager::new(templates_dir).map_err(|e| {
+            io::Error::new(io::ErrorKind::Other, format!("TemplateManager error: {}", e))
+        })?;
+
+        // DPR - usa template inteligente
+        let dpr_template = get_project_template_content(&mut template_manager, "project").map_err(|e| {
+            io::Error::new(io::ErrorKind::Other, format!("Template error: {}", e))
+        })?;
+        let dpr_content = dpr_template.replace("{{project}}", project_name);
         created_files.push(utils::write_file_with_stats(
             &root.join(format!("{}.dpr", project_name)),
             &dpr_content,
         )?);
 
-        // AppModule
+        // AppModule - usa template inteligente
+        let app_module_template = get_project_template_content(&mut template_manager, "app_module").map_err(|e| {
+            io::Error::new(io::ErrorKind::Other, format!("Template error: {}", e))
+        })?;
         created_files.push(utils::write_file_with_stats(
             &src_path.join("AppModule.pas"),
-            include_str!("../templates/project/app_module.pas"),
+            &app_module_template,
         )?);
 
         // Test folder opcional
