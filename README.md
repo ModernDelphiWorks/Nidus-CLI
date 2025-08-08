@@ -167,13 +167,13 @@ The `nest4d.json` file contains the project configurations:
 
 ```json
 {
-  "name": "MyApp",
-  "description": "My Nest4D application",
+  "name": "Nest4D",
+  "description": "Nest4D Framework for Delphi",
   "version": "1.0.0",
-  "homepage": "https://github.com/user/myapp",
+  "homepage": "https://www.nest4f.com.br",
   "srcmain": "src",
-  "projects": ["MyApp.dpr"],
-  "download": "https://github.com/user/myapp/archive/main.zip",
+  "projects": [],
+  "download": "https://github.com/ModernDelphiWorks/nest4d.git",
   "dependencies": [
     "https://github.com/HashLoad/horse.git",
     "https://github.com/HashLoad/evolution4d.git",
