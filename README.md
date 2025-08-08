@@ -4,14 +4,14 @@
 
 ## 📋 Table of Contents
 
-- [Installation](#installation)
-- [Quick Start](#quick-start)
-- [Available Commands](#available-commands)
-- [Project Structure](#project-structure)
-- [Examples](#examples)
-- [Configuration](#configuration)
-- [Contributing](#contributing)
-- [License](#license)
+- [Installation](#-installation)
+- [Quick Start](#-quick-start)
+- [Available Commands](#-available-commands)
+- [Project Structure](#️-project-structure)
+- [Examples](#-examples)
+- [Configuration](#️-configuration)
+- [Contributing](#-contributing)
+- [License](#-license)
 
 ## 🔧 Installation
 
