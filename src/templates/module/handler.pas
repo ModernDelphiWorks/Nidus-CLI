@@ -5,9 +5,9 @@ interface
 uses
   System.SysUtils,
   Horse,
-  System.Evolution.ResultPair,
-  nest4d,
-  nest4d.route.handler.horse;
+  ModernSyntax.ResultPair,
+  Nidus,
+  Nidus.Route.Handler.Horse;
 
 type
   T{{mod}}RouteHandler = class(TRouteHandlerHorse)
@@ -26,7 +26,7 @@ type
 implementation
 
 uses
-  nest4d.horse,
+  Nidus.horse,
   {{mod}}Controller;
 
 { T{{mod}}RouteHandler }
@@ -49,7 +49,7 @@ procedure T{{mod}}RouteHandler.Delete(Req: THorseRequest; Res: THorseResponse);
 var
   LResult: TResultPair<String, Exception>;
 begin
-  LResult := GetNest4D.Get<T{{mod}}Controller>.Delete;
+  LResult := GetNidus.Get<T{{mod}}Controller>.Delete;
   LResult.When(
     procedure (Msg: String)
     begin
@@ -69,7 +69,7 @@ procedure T{{mod}}RouteHandler.Find(Req: THorseRequest; Res: THorseResponse);
 var
   LResult: TResultPair<String, Exception>;
 begin
-  LResult := GetNest4D.Get<T{{mod}}Controller>.Find;
+  LResult := GetNidus.Get<T{{mod}}Controller>.Find;
   LResult.When(
     procedure (Json: String)
     begin
@@ -89,7 +89,7 @@ procedure T{{mod}}RouteHandler.Insert(Req: THorseRequest; Res: THorseResponse);
 var
   LResult: TResultPair<String, Exception>;
 begin
-  LResult := GetNest4D.Get<T{{mod}}Controller>.Insert(Req.Body);
+  LResult := GetNidus.Get<T{{mod}}Controller>.Insert(Req.Body);
   LResult.When(
     procedure (Msg: String)
     begin
@@ -109,7 +109,7 @@ procedure T{{mod}}RouteHandler.Update(Req: THorseRequest; Res: THorseResponse);
 var
   LResult: TResultPair<String, Exception>;
 begin
-  LResult := GetNest4D.Get<T{{mod}}Controller>.Update(Req.Body);
+  LResult := GetNidus.Get<T{{mod}}Controller>.Update(Req.Body);
   LResult.When(
     procedure (Msg: String)
     begin

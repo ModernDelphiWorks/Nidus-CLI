@@ -4,7 +4,7 @@ interface
 
 uses
   System.SysUtils,
-  System.Evolution.ResultPair;
+  ModernSyntax.ResultPair;
 
 
 type

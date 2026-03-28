@@ -5,46 +5,25 @@ pub mod project {
     use crate::templates::template_manager::TemplateManager;
     use crate::error::CliError;
 
-    /// Obtém o conteúdo de um template de projeto de forma inteligente (disco primeiro, depois embutido)
+    /// Resolves project template content intelligently (disk-first, then built-in fallback)
     fn get_project_template_content(template_manager: &mut TemplateManager, template_name: &str) -> Result<String, CliError> {
-        // Tenta obter template customizado primeiro
-        if let Ok(template) = template_manager.get_template(&format!("project-{}", template_name)) {
-            if let Some(file) = template.files.iter().find(|f| f.name.contains(template_name)) {
-                return Ok(file.content.clone());
-            }
+        if let Some(content) = utils::resolve_custom_template(template_manager, &format!("project-{}", template_name), template_name) {
+            return Ok(content);
         }
-        
-        // Fallback para templates embutidos
-        let builtin_template = match template_name {
-            "project" => include_str!("../templates/project/project.dpr"),
+        let builtin = match template_name {
+            "project"    => include_str!("../templates/project/project.dpr"),
             "app_module" => include_str!("../templates/project/app_module.pas"),
             _ => return Err(CliError::ValidationError(format!("Unknown project template: {}", template_name))),
         };
-        
-        Ok(builtin_template.to_string())
+        Ok(builtin.to_string())
     }
 
-    /// Obtém o diretório de templates
-    fn get_templates_directory() -> Result<PathBuf, CliError> {
-        let home = std::env::var("HOME")
-            .or_else(|_| std::env::var("USERPROFILE"))
-            .map_err(|_| CliError::ValidationError("Could not find home directory".to_string()))?;
-        
-        let templates_dir = PathBuf::from(home).join(".nest4d").join("templates");
-        
-        if !templates_dir.exists() {
-            fs::create_dir_all(&templates_dir).map_err(|e| CliError::IoError(e))?;
-        }
-        
-        Ok(templates_dir)
-    }
-
-    /// Gera a estrutura inicial de um projeto Nest4d.
+    /// Generates the initial structure of a Nidus project.
     ///
-    /// # Parâmetros
-    /// - `project_path`: caminho base onde será criada a pasta do projeto
-    /// - `project_name`: nome do projeto (e da pasta)
-    /// - `include_tests`: se verdadeiro, cria também a pasta `test/`
+    /// # Parameters
+    /// - `project_path`: base path where the project directory will be created
+    /// - `project_name`: project name (also the directory name)
+    /// - `include_tests`: when `true`, also creates a `test/` directory
     pub fn generate_project_structure(
         project_path: PathBuf,
         project_name: &str,
@@ -61,17 +40,17 @@ pub mod project {
         let mut created_files: Vec<(PathBuf, u64, String)> = Vec::new();
         let mut created_dirs: Vec<PathBuf> = Vec::new();
 
-        // Inicializa o TemplateManager
-        let templates_dir = get_templates_directory().map_err(|e| {
-            io::Error::new(io::ErrorKind::Other, format!("Template directory error: {}", e))
+        // Initialize the TemplateManager
+        let templates_dir = utils::get_templates_directory().map_err(|e| {
+            io::Error::other(format!("Template directory error: {}", e))
         })?;
         let mut template_manager = TemplateManager::new(templates_dir).map_err(|e| {
-            io::Error::new(io::ErrorKind::Other, format!("TemplateManager error: {}", e))
+            io::Error::other(format!("TemplateManager error: {}", e))
         })?;
 
-        // DPR - usa template inteligente
+        // DPR — resolve template (disk-first, then built-in)
         let dpr_template = get_project_template_content(&mut template_manager, "project").map_err(|e| {
-            io::Error::new(io::ErrorKind::Other, format!("Template error: {}", e))
+            io::Error::other(format!("Template error: {}", e))
         })?;
         let dpr_content = dpr_template.replace("{{project}}", project_name);
         created_files.push(utils::write_file_with_stats(
@@ -79,23 +58,67 @@ pub mod project {
             &dpr_content,
         )?);
 
-        // AppModule - usa template inteligente
+        // AppModule — resolve template (disk-first, then built-in)
         let app_module_template = get_project_template_content(&mut template_manager, "app_module").map_err(|e| {
-            io::Error::new(io::ErrorKind::Other, format!("Template error: {}", e))
+            io::Error::other(format!("Template error: {}", e))
         })?;
         created_files.push(utils::write_file_with_stats(
             &src_path.join("AppModule.pas"),
             &app_module_template,
         )?);
 
-        // Test folder opcional
+        // .gitignore for Delphi projects
+        let gitignore_content = "\
+# Delphi compiled output\n\
+*.exe\n\
+*.dcu\n\
+*.dcp\n\
+*.bpl\n\
+*.bpi\n\
+*.drc\n\
+*.map\n\
+*.dsk\n\
+*.local\n\
+*.identcache\n\
+*.tvsconfig\n\
+\n\
+# Build output\n\
+Win32/\n\
+Win64/\n\
+OSX32/\n\
+OSX64/\n\
+Android/\n\
+iOSDevice32/\n\
+iOSDevice64/\n\
+iOSSimulator/\n\
+\n\
+# Delphi IDE history\n\
+__history/\n\
+__recovery/\n\
+\n\
+# Project-local settings\n\
+*.dproj.local\n\
+*.groupproj.local\n\
+\n\
+# Backup files\n\
+*.~*\n\
+\n\
+# Logs\n\
+*.log\n\
+";
+        created_files.push(utils::write_file_with_stats(
+            &root.join(".gitignore"),
+            gitignore_content,
+        )?);
+
+        // Optional test folder
         if include_tests {
             let test_dir = root.join("test");
             fs::create_dir_all(&test_dir)?;
             created_dirs.push(test_dir);
         }
 
-        // Resumo
+        // Summary
         println!("\n{}", "🎯 Project scaffold summary".bold().cyan());
         println!("📁 Root: {}", root.display());
 
@@ -126,10 +149,8 @@ pub mod project {
         Ok(())
     }
 
-    pub fn ensure_project_dpr_exists() -> PathBuf {
-        // Procura .dpr na pasta atual
-        let mut dpr_files: Vec<PathBuf> = std::fs::read_dir(".")
-            .unwrap()
+    pub fn ensure_project_dpr_exists() -> crate::error::Result<PathBuf> {
+        let dpr_files: Vec<PathBuf> = std::fs::read_dir(".")?
             .filter_map(|entry| {
                 let path = entry.ok()?.path();
                 if path.extension().map(|ext| ext == "dpr").unwrap_or(false) {
@@ -141,13 +162,27 @@ pub mod project {
             .collect();
 
         if dpr_files.is_empty() {
-            eprintln!(
-                "❌ Nenhum arquivo .dpr encontrado. Execute primeiro `nest4d new <projeto>`."
-            );
-            std::process::exit(1);
+            return Err(crate::error::CliError::validation_error(
+                "No .dpr file found. Run `Nidus new <project>` first."
+            ));
         }
 
-        // Retorna o primeiro encontrado
-        dpr_files.remove(0)
+        // Prefer the .dpr whose stem matches the current directory name
+        let cwd_name = std::env::current_dir()
+            .ok()
+            .and_then(|p| p.file_name().map(|n| n.to_string_lossy().to_string()));
+
+        let best = cwd_name
+            .as_deref()
+            .and_then(|name| {
+                dpr_files
+                    .iter()
+                    .find(|p| p.file_stem().map(|s| s.to_string_lossy() == name).unwrap_or(false))
+            })
+            .or_else(|| dpr_files.first())
+            .cloned()
+            .expect("checked non-empty above");
+
+        Ok(best)
     }
 }

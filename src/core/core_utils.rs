@@ -1,7 +1,7 @@
 pub mod utils {
     use crate::error::{CliError, Result};
-    use colored::*;
-    use log::{debug, info, warn};
+    use crate::templates::template_manager::TemplateManager;
+    use log::{debug, info};
     use regex::Regex;
     use std::fs::{self, File};
     use std::io::{self, Read, Write};
@@ -16,7 +16,7 @@ pub mod utils {
     }
 
     pub fn get_size_file(path: &str) -> Result<String> {
-        debug!("Calculando tamanho do arquivo: {}", path);
+        debug!("Calculating file size: {}", path);
         let mut file: File = File::open(path)?;
         let mut buffer: Vec<u8> = Vec::new();
         file.read_to_end(&mut buffer)?;
@@ -26,7 +26,7 @@ pub mod utils {
     }
 
     pub fn read_from_file(file_path: &str) -> Result<String> {
-        debug!("Lendo arquivo: {}", file_path);
+        debug!("Reading file: {}", file_path);
         let mut file: File = File::open(file_path)?;
         let mut content: String = String::new();
         file.read_to_string(&mut content)?;
@@ -35,32 +35,30 @@ pub mod utils {
     }
 
     pub fn write_to_file(file_path: &str, content: &str) -> Result<()> {
-        debug!("Escrevendo arquivo: {}", file_path);
+        debug!("Writing file: {}", file_path);
         let mut file: File = File::create(file_path)?;
         file.write_all(content.as_bytes())?;
-        info!("✅ Arquivo criado: {}", file_path);
+        info!("✅ File created: {}", file_path);
 
         Ok(())
     }
 
     pub fn regex_replace_all(input: &str, pattern: &str, replacement: &str) -> Result<String> {
-        debug!("Aplicando regex: {} -> {}", pattern, replacement);
+        debug!("Applying regex: {} -> {}", pattern, replacement);
         let regex_pattern: Regex = Regex::new(pattern)?;
         Ok(regex_pattern.replace_all(input, replacement).to_string())
     }
 
     // Extract git name the url
     pub fn extract_repo_name(url: &str) -> Option<String> {
-        let parts: Vec<&str> = url.split('/').collect();
-        let last_part: &&str = parts.last()?;
-
-        let name_end: usize = last_part.rfind('.')?;
-        Some(last_part[..name_end].to_string())
+        let last_part = url.trim_end_matches('/').split('/').next_back()?;
+        let name = last_part.strip_suffix(".git").unwrap_or(last_part);
+        if name.is_empty() { None } else { Some(name.to_string()) }
     }
 
     pub fn write_file_with_stats(path: &Path, content: &str) -> io::Result<(PathBuf, u64, String)> {
         write_to_file(path.to_string_lossy().as_ref(), content)
-            .map_err(|e| io::Error::new(io::ErrorKind::Other, e.to_string()))?;
+            .map_err(|e| io::Error::other(e.to_string()))?;
 
         let bytes = std::fs::metadata(path)?.len();
         let size_str = format!("({} bytes)", bytes);
@@ -72,48 +70,19 @@ pub mod utils {
         ))
     }
 
-    // Check command init executed
-    pub fn check_init_json_exist(_matches: &clap::ArgMatches) {
-        let path = Path::new("nest4d.json");
+    /// Verifies that `nidus.json` exists in the current directory.
+    /// Returns an error if not found; does NOT auto-create the file.
+    pub fn check_init_json_exist(_matches: &clap::ArgMatches) -> Result<()> {
+        let path = Path::new("nidus.json");
         if !path.exists() {
-            warn!("Arquivo nest4d.json não encontrado, gerando configuração padrão");
-            println!(
-                "{}",
-                "⚠️ No nest4d.json found. Generating default config...".yellow()
-            );
-
-            let default_json = r#"{
-  "name": "Nest4d",
-  "description": "Nest4d Framework for Delphi",
-  "version": "main",
-  "homepage": "https://docs.nest4d.com/",
-  "mainsrc": "./dependencies",
-  "projects": [],
-  "download": "https://github.com/ModernDelphiWorks/nest4d.git",
-  "dependencies": {
-    "https://github.com/HashLoad/Horse.git": "",
-    "https://github.com/ModernDelphiWorks/evolution4d.git": "",
-    "https://github.com/ModernDelphiWorks/injector4d.git": ""
-  }
-}"#;
-            if let Err(e) = fs::write(path, default_json) {
-                eprintln!("❌ Falha ao criar nest4d.json: {}", e);
-                std::process::exit(1);
-            }
-            info!("Arquivo nest4d.json criado com sucesso");
-            println!("{}", "✅ Default nest4d.json created.".green());
+            return Err(CliError::validation_error(
+                "No nidus.json found. Run `Nidus install` to initialize this project."
+            ));
         }
+        Ok(())
     }
 
-    /// Imprime mensagens de erro e encerra o processo
-    pub fn println_panic(messages: &[&str]) {
-        for msg in messages {
-            eprintln!("{}", msg);
-        }
-        std::process::exit(1);
-    }
-    
-    /// Versão que aceita CliError
+    /// Centralized exit point — the only place where process::exit is permitted
     pub fn handle_error(error: CliError) -> ! {
         eprintln!("❌ {}", error);
         std::process::exit(1);
@@ -121,6 +90,32 @@ pub mod utils {
 
     pub fn path_to_unix_style(path: &Path) -> String {
         path.display().to_string().replace("\\", "/")
+    }
+
+    /// Returns the content of a custom (on-disk) template, or `None` if not found.
+    /// Call this before falling back to the built-in template.
+    pub fn resolve_custom_template(manager: &mut TemplateManager, key: &str, component: &str) -> Option<String> {
+        manager.get_template(key).ok().and_then(|t| {
+            t.files
+                .iter()
+                .find(|f| f.name.contains(component))
+                .map(|f| f.content.clone())
+        })
+    }
+
+    /// Returns the user templates directory (~/.Nidus/templates), creating it if needed
+    pub fn get_templates_directory() -> Result<PathBuf> {
+        let home = std::env::var("HOME")
+            .or_else(|_| std::env::var("USERPROFILE"))
+            .map_err(|_| CliError::ValidationError("Could not find home directory".to_string()))?;
+
+        let templates_dir = PathBuf::from(home).join(".Nidus").join("templates");
+
+        if !templates_dir.exists() {
+            fs::create_dir_all(&templates_dir)?;
+        }
+
+        Ok(templates_dir)
     }
 
     pub fn camel_case(s: &str) -> String {

@@ -5,7 +5,7 @@
             "name": "Debug",
             "type": "lldb",
             "request": "launch",
-            "program": "${workspaceFolder}/target/debug/nest4d.exe",
+            "program": "${workspaceFolder}/target/debug/Nidus.exe",
             "args": [],
             "cwd": "${workspaceFolder}",
             "preLaunchTask": "cargo build"
@@ -14,7 +14,7 @@
             "name": "Release",
             "type": "lldb",
             "request": "launch",
-            "program": "${workspaceFolder}/target/release/nest4d.exe",
+            "program": "${workspaceFolder}/target/release/Nidus.exe",
             "args": [
                 "new",
                 "meu-projeto"

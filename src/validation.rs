@@ -2,7 +2,7 @@ use crate::error::{CliError, Result};
 use regex::Regex;
 use std::path::Path;
 
-/// Palavras reservadas do Delphi que não podem ser usadas como nomes de módulos
+/// Delphi reserved words that cannot be used as module or project names
 const DELPHI_RESERVED_WORDS: &[&str] = &[
     "and", "array", "as", "asm", "begin", "case", "class", "const", "constructor",
     "destructor", "div", "do", "downto", "else", "end", "except", "exports",
@@ -28,29 +28,25 @@ const DELPHI_RESERVED_WORDS: &[&str] = &[
     "raise"
 ];
 
-/// Valida se um nome de módulo é válido
+/// Validates whether a module name is valid
 pub fn validate_module_name(name: &str) -> Result<()> {
-    // Verifica se não está vazio
+    // Ensure name is not empty
     if name.trim().is_empty() {
         return Err(CliError::validation_error("Module name cannot be empty"));
     }
 
-    // Verifica tamanho mínimo e máximo
-    if name.len() < 1 {
-        return Err(CliError::validation_error("Module name must have at least 1 character"));
-    }
-
+    // Enforce maximum length
     if name.len() > 50 {
         return Err(CliError::validation_error("Module name cannot have more than 50 characters"));
     }
 
-    // Verifica se contém apenas caracteres válidos (letras, números, underscore)
+    // Validate that only allowed characters are used (letters, digits, underscore)
     let valid_chars = Regex::new(r"^[a-zA-Z][a-zA-Z0-9_]*$")?;
     if !valid_chars.is_match(name) {
         return Err(CliError::invalid_module_name(name));
     }
 
-    // Verifica se não é uma palavra reservada
+    // Reject Delphi reserved words
     let name_lower = name.to_lowercase();
     if DELPHI_RESERVED_WORDS.contains(&name_lower.as_str()) {
         return Err(CliError::validation_error(
@@ -58,21 +54,21 @@ pub fn validate_module_name(name: &str) -> Result<()> {
         ));
     }
 
-    // Verifica se não começa com número
-    if name.chars().next().unwrap().is_numeric() {
+    // Ensure the name does not start with a digit
+    if name.chars().next().expect("name is non-empty, checked above").is_numeric() {
         return Err(CliError::validation_error("Module name cannot start with a number"));
     }
 
     Ok(())
 }
 
-/// Valida se um caminho de projeto é válido
+/// Validates whether a project path is valid
 pub fn validate_project_path(path: &str) -> Result<()> {
     if path.trim().is_empty() {
         return Err(CliError::validation_error("Project path cannot be empty"));
     }
 
-    // Verifica se o caminho começa com ./
+    // Require relative paths starting with ./
     if !path.starts_with("./") {
         return Err(CliError::validation_error(
             "Path must start with './'. Example: './my_project'"
@@ -82,12 +78,12 @@ pub fn validate_project_path(path: &str) -> Result<()> {
     Ok(())
 }
 
-/// Valida se um nome de projeto é válido
+/// Validates whether a project name is valid
 pub fn validate_project_name(name: &str) -> Result<()> {
-    // Reutiliza a validação de módulo, mas com regras específicas para projeto
+    // Reuse module name validation with project-specific rules
     validate_module_name(name)?;
 
-    // Verifica se não contém espaços (projetos não devem ter espaços)
+    // Project names must not contain spaces
     if name.contains(' ') {
         return Err(CliError::validation_error(
             "Project name cannot contain spaces. Use underscore (_) or camelCase"
@@ -97,24 +93,27 @@ pub fn validate_project_name(name: &str) -> Result<()> {
     Ok(())
 }
 
-/// Valida URLs do Git (apenas GitHub HTTPS por enquanto)
+/// Validates Git URLs — accepts any HTTPS or SSH git URL
 pub fn validate_git_url(url: &str) -> Result<()> {
     if url.trim().is_empty() {
         return Err(CliError::validation_error("Git URL cannot be empty"));
     }
 
-    // Verifica se é uma URL HTTPS do GitHub
-    let github_regex = Regex::new(r"^https://github\.com/[\w\-\.]+/[\w\-\.]+(\.git)?/?$")?;
-    if !github_regex.is_match(url) {
+    // HTTPS: https://<host>/<user>/<repo>[.git][/]
+    let https_re = Regex::new(r"^https://[^/]+/[\w\-\.]+/[\w\-\.]+(\.git)?/?$")?;
+    // SSH:   git@<host>:<user>/<repo>[.git]
+    let ssh_re = Regex::new(r"^git@[^:]+:[\w\-\.]+/[\w\-\.]+(\.git)?$")?;
+
+    if !https_re.is_match(url) && !ssh_re.is_match(url) {
         return Err(CliError::validation_error(
-            "URL must be a valid GitHub HTTPS URL (ex: https://github.com/user/repo.git)"
+            "URL must be a valid HTTPS (https://host/user/repo) or SSH (git@host:user/repo) git URL"
         ));
     }
 
     Ok(())
 }
 
-/// Verifica se um arquivo já existe e se deve ser sobrescrito
+/// Checks whether a file already exists and whether it should be overwritten
 pub fn check_file_overwrite(file_path: &Path, overwrite: bool) -> Result<()> {
     if file_path.exists() && !overwrite {
         return Err(CliError::file_already_exists(
@@ -124,18 +123,18 @@ pub fn check_file_overwrite(file_path: &Path, overwrite: bool) -> Result<()> {
     Ok(())
 }
 
-/// Valida se o diretório é um projeto Nest4D válido
-pub fn validate_nest4d_project<P: AsRef<std::path::Path>>(path: P) -> Result<()> {
-    let nest4d_path = path.as_ref().join("nest4d.json");
-    if !nest4d_path.exists() {
+/// Validates whether a directory contains a valid Nidus project
+pub fn validate_nidus_project<P: AsRef<std::path::Path>>(path: P) -> Result<()> {
+    let nidus_path = path.as_ref().join("nidus.json");
+    if !nidus_path.exists() {
         return Err(CliError::ProjectNotFound);
     }
     Ok(())
 }
 
-/// Valida se o diretório atual é um projeto Nest4D válido
-pub fn validate_current_nest4d_project() -> Result<()> {
-    validate_nest4d_project(std::env::current_dir()?)
+/// Validates whether the current directory contains a valid Nidus project
+pub fn validate_current_nidus_project() -> Result<()> {
+    validate_nidus_project(std::env::current_dir()?)
 }
 
 #[cfg(test)]
@@ -156,8 +155,8 @@ mod tests {
         assert!(validate_module_name("123User").is_err());
         assert!(validate_module_name("User-Service").is_err());
         assert!(validate_module_name("User Service").is_err());
-        assert!(validate_module_name("begin").is_err()); // palavra reservada
-        assert!(validate_module_name("package").is_err()); // palavra reservada
+        assert!(validate_module_name("begin").is_err()); // reserved word
+        assert!(validate_module_name("package").is_err()); // reserved word
     }
 
     #[test]
@@ -171,7 +170,9 @@ mod tests {
     #[test]
     fn test_validate_git_url() {
         assert!(validate_git_url("https://github.com/user/repo.git").is_ok());
-        assert!(validate_git_url("https://gitlab.com/user/repo.git").is_err());
+        assert!(validate_git_url("https://gitlab.com/user/repo.git").is_ok());
+        assert!(validate_git_url("git@github.com:user/repo.git").is_ok());
+        assert!(validate_git_url("http://github.com/user/repo.git").is_err()); // HTTP
         assert!(validate_git_url("not-a-url").is_err());
         assert!(validate_git_url("").is_err());
     }

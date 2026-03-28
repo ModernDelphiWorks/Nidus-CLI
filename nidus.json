@@ -1,0 +1,14 @@
+{
+  "name": "Nidus",
+  "description": "Nidus Framework for Delphi",
+  "version": "master",
+  "homepage": "https://www.isaquepinheiro.com.br/nidus",
+  "mainsrc": "src/",
+  "projects": [],
+  "download": "https://github.com/ModernDelphiWorks/Nidus.git",
+  "dependencies": {
+    "https://github.com/HashLoad/Horse.git": "",
+    "https://github.com/ModernDelphiWorks/ModernSyntax.git": "",
+    "https://github.com/ModernDelphiWorks/InjectContainer.git": ""
+  }
+}

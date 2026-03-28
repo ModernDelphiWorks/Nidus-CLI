@@ -1,4 +1,5 @@
-use nest4d::validation::*;
+use nidus::core::core_utils::utils;
+use nidus::validation::*;
 use std::fs;
 use tempfile::TempDir;
 
@@ -12,22 +13,22 @@ fn test_validate_module_name_valid() {
 
 #[test]
 fn test_validate_module_name_invalid() {
-    // Nome vazio
+    // Empty name
     assert!(validate_module_name("").is_err());
 
-    // Nome muito longo
+    // Name too long
     let long_name = "A".repeat(51);
     assert!(validate_module_name(&long_name).is_err());
 
-    // Caracteres inválidos
+    // Invalid characters
     assert!(validate_module_name("User-Module").is_err());
     assert!(validate_module_name("User Module").is_err());
     assert!(validate_module_name("User@Module").is_err());
 
-    // Começa com número
+    // Starts with a digit
     assert!(validate_module_name("1User").is_err());
 
-    // Palavras reservadas do Delphi
+    // Delphi reserved words
     assert!(validate_module_name("begin").is_err());
     assert!(validate_module_name("end").is_err());
     assert!(validate_module_name("if").is_err());
@@ -203,10 +204,10 @@ fn test_validate_project_name_valid() {
 
 #[test]
 fn test_validate_project_name_invalid() {
-    // Nome com espaços
+    // Name with spaces
     assert!(validate_project_name("My Project").is_err());
 
-    // Outros casos inválidos (herda de validate_module_name)
+    // Other invalid cases (inherited from validate_module_name)
     assert!(validate_project_name("").is_err());
     assert!(validate_project_name("123Project").is_err());
     assert!(validate_project_name("begin").is_err());
@@ -214,18 +215,25 @@ fn test_validate_project_name_invalid() {
 
 #[test]
 fn test_validate_git_url_valid() {
+    // GitHub HTTPS
     assert!(validate_git_url("https://github.com/user/repo.git").is_ok());
     assert!(validate_git_url("https://github.com/user/repo").is_ok());
     assert!(validate_git_url("https://github.com/user-name/repo-name.git").is_ok());
+    // Other HTTPS hosts (GitLab, Gitea, self-hosted)
+    assert!(validate_git_url("https://gitlab.com/user/repo.git").is_ok());
+    assert!(validate_git_url("https://gitea.example.com/user/repo").is_ok());
+    // SSH
+    assert!(validate_git_url("git@github.com:user/repo.git").is_ok());
+    assert!(validate_git_url("git@gitlab.com:org/project.git").is_ok());
 }
 
 #[test]
 fn test_validate_git_url_invalid() {
-    assert!(validate_git_url("http://github.com/user/repo.git").is_err()); // HTTP
-    assert!(validate_git_url("https://gitlab.com/user/repo.git").is_err()); // Não é GitHub
-    assert!(validate_git_url("git@github.com:user/repo.git").is_err()); // SSH
+    assert!(validate_git_url("http://github.com/user/repo.git").is_err()); // HTTP (not HTTPS)
     assert!(validate_git_url("invalid-url").is_err());
     assert!(validate_git_url("").is_err());
+    assert!(validate_git_url("ftp://github.com/user/repo").is_err()); // wrong scheme
+    assert!(validate_git_url("https://github.com/user").is_err()); // missing repo part
 }
 
 #[test]
@@ -233,31 +241,71 @@ fn test_check_file_overwrite() {
     let temp_dir = TempDir::new().unwrap();
     let file_path = temp_dir.path().join("test.txt");
 
-    // Arquivo não existe - deve passar
+    // File does not exist — must pass
     assert!(check_file_overwrite(&file_path, false).is_ok());
     assert!(check_file_overwrite(&file_path, true).is_ok());
 
-    // Cria o arquivo
+    // Create the file
     fs::write(&file_path, "test content").unwrap();
 
-    // Arquivo existe, overwrite = false - deve falhar
+    // File exists, overwrite = false — must fail
     assert!(check_file_overwrite(&file_path, false).is_err());
 
-    // Arquivo existe, overwrite = true - deve passar
+    // File exists, overwrite = true — must pass
     assert!(check_file_overwrite(&file_path, true).is_ok());
 }
 
 #[test]
-fn test_validate_nest4d_project() {
+fn test_extract_repo_name_with_git_suffix() {
+    assert_eq!(
+        utils::extract_repo_name("https://github.com/user/my-repo.git"),
+        Some("my-repo".to_string())
+    );
+    assert_eq!(
+        utils::extract_repo_name("https://github.com/ModernDelphiWorks/Nidus.git"),
+        Some("Nidus".to_string())
+    );
+}
+
+#[test]
+fn test_extract_repo_name_without_git_suffix() {
+    assert_eq!(
+        utils::extract_repo_name("https://github.com/user/my-repo"),
+        Some("my-repo".to_string())
+    );
+    assert_eq!(
+        utils::extract_repo_name("https://github.com/user/another-repo/"),
+        Some("another-repo".to_string())
+    );
+}
+
+#[test]
+fn test_extract_repo_name_edge_cases() {
+    // Simple name with .git suffix
+    assert_eq!(
+        utils::extract_repo_name("repo.git"),
+        Some("repo".to_string())
+    );
+    // Simple name without .git suffix
+    assert_eq!(
+        utils::extract_repo_name("repo"),
+        Some("repo".to_string())
+    );
+    // Empty string
+    assert_eq!(utils::extract_repo_name(""), None);
+}
+
+#[test]
+fn test_validate_nidus_project() {
     let temp_dir = TempDir::new().unwrap();
 
-    // Sem nest4d.json - deve falhar
-    assert!(validate_nest4d_project(temp_dir.path()).is_err());
+    // Without nidus.json — must fail
+    assert!(validate_nidus_project(temp_dir.path()).is_err());
 
-    // Cria nest4d.json
-    let nest4d_path = temp_dir.path().join("nest4d.json");
-    fs::write(&nest4d_path, "{}").unwrap();
+    // Create nidus.json
+    let nidus_path = temp_dir.path().join("nidus.json");
+    fs::write(&nidus_path, "{}").unwrap();
 
-    // Com nest4d.json - deve passar
-    assert!(validate_nest4d_project(temp_dir.path()).is_ok());
+    // With nidus.json — must pass
+    assert!(validate_nidus_project(temp_dir.path()).is_ok());
 }

@@ -3,10 +3,10 @@ use std::fmt;
 #[derive(Debug, Clone)]
 
 pub enum GenerateType {
-    // Grupos compostos
-    Module,   // Gera apenas module, handler
-    Scaffold, // Gera controller, service, repository, interface, infra
-    All,      // Gera tudo acima
+    // Composite groups
+    Module,   // Generates only module + handler
+    Scaffold, // Generates controller, service, repository, interface, infra
+    All,      // Generates everything above
 
     // Itens individuais
     Controller,
@@ -22,8 +22,8 @@ pub struct CommandGenerateDTO {
     pub kind: GenerateType,
     pub name: String,
     pub path: Option<String>,
-    pub flat: bool,
     pub overwrite: bool,
+    pub template: Option<String>,
 }
 
 impl CommandGenerateDTO {
@@ -31,15 +31,15 @@ impl CommandGenerateDTO {
         kind: GenerateType,
         name: String,
         path: Option<String>,
-        flat: bool,
         overwrite: bool,
+        template: Option<String>,
     ) -> Self {
         Self {
             kind,
             name,
             path,
-            flat,
             overwrite,
+            template,
         }
     }
 
@@ -56,8 +56,8 @@ impl fmt::Display for CommandGenerateDTO {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(
             f,
-            "Kind: {:?}, Name: {}, Path: {:?}, Flat: {}, Overwrite: {}",
-            self.kind, self.name, self.path, self.flat, self.overwrite
+            "Kind: {:?}, Name: {}, Path: {:?}, Overwrite: {}, Template: {:?}",
+            self.kind, self.name, self.path, self.overwrite, self.template
         )
     }
 }

@@ -1,39 +1,44 @@
 use super::super::dto::config_global_dto::ConfigGlobalDTO;
-use super::command_trait::cmd_trait::ICommand;
+use super::command_trait::cmd_trait::CliCommand;
 use crate::core::core_add_paths_dproj::dproj;
+use crate::core::core_utils::utils;
+use crate::error::CliError;
 use clap::{Arg, Command};
 
 pub struct CommandAddPaths;
 
-impl ICommand for CommandAddPaths {
-    fn new() -> Self {
-        Self
-    }
+impl CliCommand for CommandAddPaths {
 
     fn arg() -> Arg {
         Arg::new("")
     }
 
     fn command() -> Command {
-        Command::new("add-paths").about("🔗 Add dependencies' source paths to .dproj file")
+        Command::new("sync")
+            .about("🔗 Add dependencies' source paths to .dproj file")
+            .visible_alias("add-paths")
     }
 
     fn execute(_global_dto: &mut ConfigGlobalDTO, _matches: &clap::ArgMatches) {
-        let (dproj_files, dependency_paths) = match dproj::find_dproj_files_and_collect_paths() {
-            Ok(tuple) => tuple,
-            Err(_) => (Vec::new(), Vec::new()),
-        };
+        let mainsrc = _global_dto
+            .get_command_install()
+            .map(|c| c.mainsrc.clone())
+            .unwrap_or_else(|| "./dependencies".to_string());
+
+        let (dproj_files, dependency_paths) =
+            dproj::find_dproj_and_collect_paths(&mainsrc).unwrap_or_default();
 
         if dproj_files.is_empty() {
-            eprintln!("❌ No .dproj file found in the current directory.");
-            eprintln!("⚠️ Please open Delphi so that the .dproj file can be created,");
-            eprintln!("   then save the project and run this command again in the project root.");
-            std::process::exit(2);
+            utils::handle_error(CliError::validation_error(
+                "No .dproj file found. Open Delphi, save the project, then re-run from the project root."
+            ));
         }
 
         if dependency_paths.is_empty() {
-            eprintln!("⚠️ No `src`/`Source` folders found under ./dependencies/");
-            std::process::exit(3);
+            utils::handle_error(CliError::validation_error(format!(
+                "No `src`/`Source` folders found under {}",
+                mainsrc
+            )));
         }
 
         let deps_ref: Vec<&str> = dependency_paths.iter().map(|s| s.as_str()).collect();
@@ -51,7 +56,7 @@ impl ICommand for CommandAddPaths {
         }
 
         if had_error {
-            std::process::exit(4);
+            utils::handle_error(CliError::validation_error("One or more .dproj files could not be updated."));
         }
     }
 }

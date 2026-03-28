@@ -1,7 +1,7 @@
-//! Processador de templates avançado
-//! 
-//! Este módulo implementa o processamento inteligente de templates,
-//! incluindo substituição de variáveis, validação e transformações.
+//! Advanced template processor.
+//!
+//! Implements intelligent template processing including variable substitution,
+//! validation, and text transformations.
 
 use crate::error::CliError;
 use crate::templates::config::*;
@@ -10,72 +10,80 @@ use regex::Regex;
 use std::collections::HashMap;
 use std::fmt;
 
-/// Processador de templates
+type TemplateFn = Box<dyn Fn(&[String]) -> Result<String, CliError>>;
+
+/// Template processor
 pub struct TemplateProcessor {
-    /// Variáveis globais
+    /// Global variables
     global_variables: HashMap<String, String>,
-    /// Funções personalizadas
-    custom_functions: HashMap<String, Box<dyn Fn(&[String]) -> Result<String, CliError>>>,
-    /// Cache de regex compiladas
+    /// Custom registered functions
+    custom_functions: HashMap<String, TemplateFn>,
+    /// Compiled regex cache
     regex_cache: HashMap<String, Regex>,
 }
 
-/// Contexto de processamento
+/// Processing context
 #[derive(Debug, Clone)]
 pub struct ProcessingContext {
-    /// Variáveis do contexto
+    /// Context variables
     pub variables: HashMap<String, String>,
-    /// Perfil do desenvolvedor
+    /// Developer profile
     pub developer_profile: DeveloperProfile,
-    /// Configurações específicas
+    /// Template-specific configuration
     pub template_config: Option<TemplateSpecificConfig>,
-    /// Modo de processamento
+    /// Processing mode
     pub mode: ProcessingMode,
 }
 
-/// Modos de processamento
+/// Processing modes
 #[derive(Debug, Clone, PartialEq)]
 pub enum ProcessingMode {
-    /// Modo normal
+    /// Normal mode
     Normal,
-    /// Modo debug (preserva comentários de debug)
+    /// Debug mode (preserves debug comments)
     Debug,
-    /// Modo produção (otimizado)
+    /// Production mode (optimized output)
     Production,
-    /// Modo interativo
+    /// Interactive mode
     Interactive,
 }
 
-/// Resultado do processamento
+/// Processing result
 #[derive(Debug, Clone)]
 pub struct ProcessingResult {
-    /// Conteúdo processado
+    /// Processed content
     pub content: String,
-    /// Variáveis utilizadas
+    /// Variables that were substituted
     pub used_variables: Vec<String>,
-    /// Funções utilizadas
+    /// Functions that were called
     pub used_functions: Vec<String>,
-    /// Warnings gerados
+    /// Warnings generated during processing
     pub warnings: Vec<String>,
-    /// Estatísticas de processamento
+    /// Processing statistics
     pub stats: ProcessingStats,
 }
 
-/// Estatísticas de processamento
+/// Processing statistics
 #[derive(Debug, Clone, Default)]
 pub struct ProcessingStats {
-    /// Número de substituições realizadas
+    /// Number of substitutions performed
     pub substitutions: u32,
-    /// Tempo de processamento em ms
+    /// Processing time in milliseconds
     pub processing_time_ms: u64,
-    /// Tamanho original
+    /// Original content size
     pub original_size: usize,
-    /// Tamanho final
+    /// Final content size
     pub final_size: usize,
 }
 
+impl Default for TemplateProcessor {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl TemplateProcessor {
-    /// Cria um novo processador
+    /// Creates a new processor
     pub fn new() -> Self {
         let mut processor = Self {
             global_variables: HashMap::new(),
@@ -87,9 +95,9 @@ impl TemplateProcessor {
         processor
     }
 
-    /// Registra funções built-in
+    /// Registers built-in functions
     fn register_builtin_functions(&mut self) {
-        // Função para converter para CamelCase
+        // Convert to CamelCase
         self.register_function("camelCase", Box::new(|args: &[String]| -> Result<String, CliError> {
             if args.is_empty() {
                 return Err(CliError::ValidationError("camelCase requires at least one argument".to_string()));
@@ -97,7 +105,7 @@ impl TemplateProcessor {
             Ok(to_camel_case(&args[0]))
         }));
 
-        // Função para converter para snake_case
+        // Convert to snake_case
         self.register_function("snakeCase", Box::new(|args: &[String]| -> Result<String, CliError> {
             if args.is_empty() {
                 return Err(CliError::ValidationError("snakeCase requires at least one argument".to_string()));
@@ -105,7 +113,7 @@ impl TemplateProcessor {
             Ok(to_snake_case(&args[0]))
         }));
 
-        // Função para converter para kebab-case
+        // Convert to kebab-case
         self.register_function("kebabCase", Box::new(|args: &[String]| -> Result<String, CliError> {
             if args.is_empty() {
                 return Err(CliError::ValidationError("kebabCase requires at least one argument".to_string()));
@@ -113,7 +121,7 @@ impl TemplateProcessor {
             Ok(to_kebab_case(&args[0]))
         }));
 
-        // Função para uppercase
+        // Convert to uppercase
         self.register_function("upper", Box::new(|args: &[String]| -> Result<String, CliError> {
             if args.is_empty() {
                 return Err(CliError::ValidationError("upper requires at least one argument".to_string()));
@@ -121,7 +129,7 @@ impl TemplateProcessor {
             Ok(args[0].to_uppercase())
         }));
 
-        // Função para lowercase
+        // Convert to lowercase
         self.register_function("lower", Box::new(|args: &[String]| -> Result<String, CliError> {
             if args.is_empty() {
                 return Err(CliError::ValidationError("lower requires at least one argument".to_string()));
@@ -129,20 +137,20 @@ impl TemplateProcessor {
             Ok(args[0].to_lowercase())
         }));
 
-        // Função para data atual
+        // Current date/time
         self.register_function("now", Box::new(|args: &[String]| -> Result<String, CliError> {
-            let format = args.get(0).map(|s| s.as_str()).unwrap_or("%Y-%m-%d %H:%M:%S");
+            let format = args.first().map(|s| s.as_str()).unwrap_or("%Y-%m-%d %H:%M:%S");
             let now = chrono::Local::now();
             Ok(now.format(format).to_string())
         }));
 
-        // Função para gerar UUID
+        // Generate UUID
         self.register_function("uuid", Box::new(|_args: &[String]| -> Result<String, CliError> {
             Ok(uuid::Uuid::new_v4().to_string())
         }));
     }
 
-    /// Registra uma função personalizada
+    /// Registers a custom function
     pub fn register_function<F>(&mut self, name: &str, func: F)
     where
         F: Fn(&[String]) -> Result<String, CliError> + 'static,
@@ -150,12 +158,12 @@ impl TemplateProcessor {
         self.custom_functions.insert(name.to_string(), Box::new(func));
     }
 
-    /// Define uma variável global
+    /// Sets a global variable
     pub fn set_global_variable(&mut self, name: &str, value: &str) {
         self.global_variables.insert(name.to_string(), value.to_string());
     }
 
-    /// Processa um template com contexto
+    /// Processes a template with the given context
     pub fn process(&mut self, content: &str, context: &ProcessingContext) -> Result<ProcessingResult, CliError> {
         let start_time = std::time::Instant::now();
         let original_size = content.len();
@@ -171,39 +179,39 @@ impl TemplateProcessor {
             },
         };
 
-        // 1. Processa variáveis simples
+        // 1. Process simple variables
         let current_content = result.content.clone();
         let content_after_vars = self.process_variables(&current_content, context, &mut result)?;
         result.content = content_after_vars;
 
-        // 2. Processa funções
+        // 2. Process functions
         let current_content = result.content.clone();
         let content_after_funcs = self.process_functions(&current_content, context, &mut result)?;
         result.content = content_after_funcs;
 
-        // 3. Processa condicionais
+        // 3. Process conditionals
         let current_content = result.content.clone();
         let content_after_conditionals = self.process_conditionals(&current_content, context, &mut result)?;
         result.content = content_after_conditionals;
 
-        // 4. Processa loops
+        // 4. Process loops
         let current_content = result.content.clone();
         let content_after_loops = self.process_loops(&current_content, context, &mut result)?;
         result.content = content_after_loops;
 
-        // 5. Limpeza final
+        // 5. Final cleanup
         if context.mode == ProcessingMode::Production {
             result.content = self.cleanup_production(&result.content)?;
         }
 
-        // Atualiza estatísticas
+        // Update statistics
         result.stats.processing_time_ms = start_time.elapsed().as_millis() as u64;
         result.stats.final_size = result.content.len();
 
         Ok(result)
     }
 
-    /// Processa variáveis simples
+    /// Processes simple variable substitutions
     fn process_variables(
         &mut self,
         content: &str,
@@ -236,7 +244,7 @@ impl TemplateProcessor {
         Ok(processed)
     }
 
-    /// Processa funções
+    /// Processes function calls
     fn process_functions(
         &mut self,
         content: &str,
@@ -286,7 +294,7 @@ impl TemplateProcessor {
         Ok(processed)
     }
 
-    /// Processa condicionais
+    /// Processes conditional blocks
     fn process_conditionals(
         &mut self,
         content: &str,
@@ -315,7 +323,7 @@ impl TemplateProcessor {
         Ok(processed)
     }
 
-    /// Processa loops
+    /// Processes loop blocks
     fn process_loops(
         &mut self,
         content: &str,
@@ -351,29 +359,29 @@ impl TemplateProcessor {
         Ok(processed)
     }
 
-    /// Limpeza para modo produção
+    /// Cleans up output for production mode
     fn cleanup_production(&self, content: &str) -> Result<String, CliError> {
         let mut cleaned = content.to_string();
         
-        // Remove comentários de debug
+        // Remove debug comments
         let debug_regex = Regex::new(r"//\s*DEBUG:.*\n")?;
         cleaned = debug_regex.replace_all(&cleaned, "").to_string();
         
-        // Remove linhas vazias excessivas
+        // Remove excessive blank lines
         let empty_lines_regex = Regex::new(r"\n\s*\n\s*\n")?;
         cleaned = empty_lines_regex.replace_all(&cleaned, "\n\n").to_string();
         
         Ok(cleaned)
     }
 
-    /// Obtém valor de uma variável
+    /// Gets the value of a variable
     fn get_variable_value(&self, name: &str, context: &ProcessingContext) -> Option<String> {
-        // 1. Variáveis do contexto
+        // 1. Context variables
         if let Some(value) = context.variables.get(name) {
             return Some(value.clone());
         }
-        
-        // 2. Variáveis do perfil
+
+        // 2. Developer profile variables
         match name {
             "author" => Some(context.developer_profile.name.clone()),
             "email" => Some(context.developer_profile.email.clone()),
@@ -381,21 +389,21 @@ impl TemplateProcessor {
             "namespace" => context.developer_profile.default_namespace.clone(),
             _ => None,
         }.or_else(|| {
-            // 3. Variáveis globais
+            // 3. Global variables
             self.global_variables.get(name).cloned()
         })
     }
 
-    /// Avalia uma condição
+    /// Evaluates a condition
     fn evaluate_condition(&self, condition: &str, context: &ProcessingContext) -> Result<bool, CliError> {
         let condition = condition.trim();
-        
-        // Condições simples: variável existe
+
+        // Simple condition: variable exists and is truthy
         if let Some(value) = self.get_variable_value(condition, context) {
             return Ok(!value.is_empty() && value != "false" && value != "0");
         }
         
-        // Condições de comparação
+        // Equality comparison
         if condition.contains("==") {
             let parts: Vec<&str> = condition.split("==").collect();
             if parts.len() == 2 {
@@ -408,7 +416,7 @@ impl TemplateProcessor {
         Ok(false)
     }
 
-    /// Obtém ou compila uma regex
+    /// Gets or compiles a regex (cached)
     fn get_or_compile_regex(&mut self, pattern: &str) -> Result<&Regex, CliError> {
         if !self.regex_cache.contains_key(pattern) {
             let regex = Regex::new(pattern)
@@ -419,7 +427,7 @@ impl TemplateProcessor {
     }
 }
 
-/// Converte string para CamelCase
+/// Converts a string to CamelCase
 fn to_camel_case(s: &str) -> String {
     let mut result = String::new();
     let mut capitalize_next = true;
@@ -440,7 +448,7 @@ fn to_camel_case(s: &str) -> String {
     result
 }
 
-/// Converte string para snake_case
+/// Converts a string to snake_case
 fn to_snake_case(s: &str) -> String {
     let mut result = String::new();
     
@@ -458,7 +466,7 @@ fn to_snake_case(s: &str) -> String {
     result
 }
 
-/// Converte string para kebab-case
+/// Converts a string to kebab-case
 fn to_kebab_case(s: &str) -> String {
     to_snake_case(s).replace('_', "-")
 }
@@ -482,5 +490,122 @@ impl fmt::Display for ProcessingMode {
             ProcessingMode::Production => write!(f, "production"),
             ProcessingMode::Interactive => write!(f, "interactive"),
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn ctx_with(vars: &[(&str, &str)]) -> ProcessingContext {
+        let mut ctx = ProcessingContext::default();
+        for (k, v) in vars {
+            ctx.variables.insert(k.to_string(), v.to_string());
+        }
+        ctx
+    }
+
+    #[test]
+    fn test_process_simple_variable_substitution() {
+        let mut p = TemplateProcessor::new();
+        let ctx = ctx_with(&[("mod", "User")]);
+        let result = p.process("unit {{mod}}Service;", &ctx).unwrap();
+        assert_eq!(result.content, "unit UserService;");
+        assert_eq!(result.stats.substitutions, 1);
+        assert!(result.used_variables.contains(&"mod".to_string()));
+    }
+
+    #[test]
+    fn test_process_unknown_variable_generates_warning() {
+        let mut p = TemplateProcessor::new();
+        let ctx = ProcessingContext::default();
+        let result = p.process("{{unknown}}", &ctx).unwrap();
+        assert!(result.content.contains("{{unknown}}"));
+        assert!(!result.warnings.is_empty());
+    }
+
+    #[test]
+    fn test_process_function_upper() {
+        let mut p = TemplateProcessor::new();
+        let ctx = ProcessingContext::default();
+        let result = p.process("{{upper(hello)}}", &ctx).unwrap();
+        assert_eq!(result.content, "HELLO");
+    }
+
+    #[test]
+    fn test_process_function_lower() {
+        let mut p = TemplateProcessor::new();
+        let ctx = ProcessingContext::default();
+        let result = p.process("{{lower(WORLD)}}", &ctx).unwrap();
+        assert_eq!(result.content, "world");
+    }
+
+    #[test]
+    fn test_process_function_camel_case() {
+        let mut p = TemplateProcessor::new();
+        let ctx = ProcessingContext::default();
+        let result = p.process("{{camelCase(my module)}}", &ctx).unwrap();
+        assert_eq!(result.content, "MyModule");
+    }
+
+    #[test]
+    fn test_process_function_snake_case() {
+        let mut p = TemplateProcessor::new();
+        let ctx = ProcessingContext::default();
+        let result = p.process("{{snakeCase(MyService)}}", &ctx).unwrap();
+        assert_eq!(result.content, "my_service");
+    }
+
+    #[test]
+    fn test_process_conditional_true() {
+        let mut p = TemplateProcessor::new();
+        let ctx = ctx_with(&[("feature", "enabled")]);
+        let result = p.process("{%if feature%}FEATURE{%endif%}", &ctx).unwrap();
+        assert_eq!(result.content, "FEATURE");
+    }
+
+    #[test]
+    fn test_process_conditional_false() {
+        let mut p = TemplateProcessor::new();
+        let ctx = ProcessingContext::default();
+        let result = p.process("{%if missing%}NEVER{%endif%}", &ctx).unwrap();
+        assert_eq!(result.content, "");
+    }
+
+    #[test]
+    fn test_global_variable_used_in_template() {
+        let mut p = TemplateProcessor::new();
+        p.set_global_variable("app", "Nidus");
+        let ctx = ProcessingContext::default();
+        let result = p.process("{{app}}", &ctx).unwrap();
+        assert_eq!(result.content, "Nidus");
+    }
+
+    #[test]
+    fn test_production_mode_removes_debug_comments() {
+        let mut p = TemplateProcessor::new();
+        let mut ctx = ProcessingContext::default();
+        ctx.mode = ProcessingMode::Production;
+        let result = p.process("code\n// DEBUG: remove this\nmore", &ctx).unwrap();
+        assert!(!result.content.contains("DEBUG"));
+        assert!(result.content.contains("code"));
+    }
+
+    #[test]
+    fn test_to_camel_case() {
+        assert_eq!(to_camel_case("my module"), "MyModule");
+        assert_eq!(to_camel_case("user-service"), "UserService");
+        assert_eq!(to_camel_case("hello"), "Hello");
+    }
+
+    #[test]
+    fn test_to_snake_case() {
+        assert_eq!(to_snake_case("MyService"), "my_service");
+        assert_eq!(to_snake_case("UserController"), "user_controller");
+    }
+
+    #[test]
+    fn test_to_kebab_case() {
+        assert_eq!(to_kebab_case("MyService"), "my-service");
     }
 }

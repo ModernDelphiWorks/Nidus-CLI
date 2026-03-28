@@ -5,8 +5,8 @@ interface
 uses
   System.SysUtils,
   Generics.Collections,
-  System.Evolution.Std,
-  System.Evolution.Threading,
+  ModernSyntax.Std,
+  ModernSyntax.Threading,
   {{mod}}Interface;
 
 type

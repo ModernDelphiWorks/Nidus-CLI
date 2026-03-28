@@ -7,12 +7,12 @@ program {{project}};
 uses
   SysUtils,
   Horse,
-  nest4d,
-  nest4d.horse,
+  Nidus,
+  Nidus.horse,
   AppModule in 'src\AppModule.pas';
 
 begin
-  THorse.Use( Nest4D_Horse(TAppModule.Create) );
+  THorse.Use( Nidus_Horse(TAppModule.Create) );
 
   THorse.Listen(9000, '127.0.0.1',
   procedure

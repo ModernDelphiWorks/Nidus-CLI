@@ -5,8 +5,8 @@ interface
 uses
   System.SysUtils,
   Generics.Collections,
-  nest4d.module,
-  nest4d,
+  Nidus.Module,
+  Nidus,
   {{mod}}service,
   {{mod}}repository,
   {{mod}}controller,

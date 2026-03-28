@@ -1,86 +1,85 @@
-//! Configuração de templates customizáveis
-//! 
-//! Este módulo define as estruturas de configuração para
-//! templates personalizados e suas variáveis.
+//! Customizable template configuration.
+//!
+//! This module defines configuration structures for custom templates and their variables.
 
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::path::PathBuf;
 
-/// Configuração global de templates
+/// Global templates configuration
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct TemplatesConfig {
-    /// Diretório base para templates customizados
+    /// Base directory for custom templates
     pub templates_dir: PathBuf,
-    /// Template padrão para novos módulos
+    /// Default template for new modules
     pub default_module_template: String,
-    /// Template padrão para novos projetos
+    /// Default template for new projects
     pub default_project_template: String,
-    /// Cache habilitado
+    /// Whether caching is enabled
     pub cache_enabled: bool,
-    /// Tempo de vida do cache em segundos
+    /// Cache time-to-live in seconds
     pub cache_ttl: u64,
-    /// Templates favoritos do usuário
+    /// User's favorite templates
     pub favorite_templates: Vec<String>,
-    /// Repositórios de templates externos
+    /// External template repositories
     pub template_repositories: Vec<TemplateRepository>,
-    /// Configurações específicas por template
+    /// Per-template specific configuration
     pub template_configs: HashMap<String, TemplateSpecificConfig>,
 }
 
-/// Repositório de templates externos
+/// External template repository
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct TemplateRepository {
-    /// Nome do repositório
+    /// Repository name
     pub name: String,
-    /// URL do repositório
+    /// Repository URL
     pub url: String,
-    /// Branch ou tag específica
+    /// Specific branch or tag
     pub branch: Option<String>,
-    /// Se está habilitado
+    /// Whether this repository is enabled
     pub enabled: bool,
-    /// Última atualização
+    /// Last update timestamp
     pub last_update: Option<String>,
 }
 
-/// Configuração específica de um template
+/// Per-template specific configuration
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct TemplateSpecificConfig {
-    /// Variáveis padrão para este template
+    /// Default variable values for this template
     pub default_variables: HashMap<String, String>,
-    /// Se deve sempre perguntar pelas variáveis
+    /// Whether to always prompt for variables
     pub always_prompt: bool,
-    /// Hooks pré-geração
+    /// Pre-generation hooks
     pub pre_hooks: Vec<String>,
-    /// Hooks pós-geração
+    /// Post-generation hooks
     pub post_hooks: Vec<String>,
 }
 
-/// Perfil de desenvolvimento
+/// Developer profile
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct DeveloperProfile {
-    /// Nome do desenvolvedor
+    /// Developer name
     pub name: String,
-    /// Email do desenvolvedor
+    /// Developer email
     pub email: String,
-    /// Organização/empresa
+    /// Organization / company
     pub organization: Option<String>,
-    /// Namespace padrão
+    /// Default namespace
     pub default_namespace: Option<String>,
-    /// Templates preferidos
+    /// Preferred templates
     pub preferred_templates: Vec<String>,
-    /// Configurações personalizadas
+    /// Custom settings
     pub custom_settings: HashMap<String, String>,
 }
 
 impl Default for TemplatesConfig {
     fn default() -> Self {
         Self {
-            templates_dir: PathBuf::from(".nest4d/templates"),
+            templates_dir: PathBuf::from(".Nidus/templates"),
             default_module_template: "default-module".to_string(),
             default_project_template: "default-project".to_string(),
             cache_enabled: true,
-            cache_ttl: 3600, // 1 hora
+            cache_ttl: 3600, // 1 hour
             favorite_templates: vec![
                 "default-module".to_string(),
                 "api-module".to_string(),
@@ -89,7 +88,7 @@ impl Default for TemplatesConfig {
             template_repositories: vec![
                 TemplateRepository {
                     name: "official".to_string(),
-                    url: "https://github.com/nest4d/templates".to_string(),
+                    url: "https://github.com/Nidus/templates".to_string(),
                     branch: Some("main".to_string()),
                     enabled: true,
                     last_update: None,
@@ -103,8 +102,8 @@ impl Default for TemplatesConfig {
 impl Default for DeveloperProfile {
     fn default() -> Self {
         Self {
-            name: "Nest4D Developer".to_string(),
-            email: "developer@nest4d.com".to_string(),
+            name: "Nidus Developer".to_string(),
+            email: "developer@Nidus.com".to_string(),
             organization: None,
             default_namespace: None,
             preferred_templates: vec!["default-module".to_string()],
@@ -113,90 +112,90 @@ impl Default for DeveloperProfile {
     }
 }
 
-/// Configuração de variáveis de template
+/// Template variable configuration
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct TemplateVariableConfig {
-    /// Nome da variável
+    /// Variable name
     pub name: String,
-    /// Valor padrão
+    /// Default value
     pub default_value: Option<String>,
-    /// Descrição da variável
+    /// Variable description
     pub description: String,
-    /// Tipo da variável
+    /// Variable type
     pub var_type: VariableType,
-    /// Se é obrigatória
+    /// Whether the variable is required
     pub required: bool,
-    /// Validação regex (opcional)
+    /// Optional regex validation
     pub validation: Option<String>,
-    /// Opções para variáveis do tipo choice
+    /// Choices for `Choice`-typed variables
     pub choices: Option<Vec<String>>,
 }
 
-/// Tipos de variáveis suportadas
+/// Supported variable types
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum VariableType {
-    /// String simples
+    /// Plain string
     String,
-    /// Número inteiro
+    /// Integer number
     Integer,
-    /// Número decimal
+    /// Floating-point number
     Float,
-    /// Booleano
+    /// Boolean
     Boolean,
-    /// Escolha entre opções
+    /// One of a fixed set of choices
     Choice,
-    /// Lista de strings
+    /// List of strings
     Array,
-    /// Data/hora
+    /// Date/time
     DateTime,
-    /// Email
+    /// Email address
     Email,
     /// URL
     Url,
 }
 
-/// Configuração de hooks
+/// Hook configuration
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct HookConfig {
-    /// Nome do hook
+    /// Hook name
     pub name: String,
-    /// Comando a ser executado
+    /// Command to execute
     pub command: String,
-    /// Argumentos do comando
+    /// Command arguments
     pub args: Vec<String>,
-    /// Diretório de trabalho
+    /// Working directory
     pub working_dir: Option<PathBuf>,
-    /// Se deve falhar silenciosamente
+    /// Whether to fail silently
     pub fail_silently: bool,
-    /// Timeout em segundos
+    /// Timeout in seconds
     pub timeout: Option<u64>,
 }
 
-/// Configuração de cache inteligente
+/// Smart cache configuration
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct CacheConfig {
-    /// Se o cache está habilitado
+    /// Whether caching is enabled
     pub enabled: bool,
-    /// Tamanho máximo do cache em MB
+    /// Maximum cache size in MB
     pub max_size_mb: u64,
-    /// TTL padrão em segundos
+    /// Default TTL in seconds
     pub default_ttl: u64,
-    /// Estratégia de limpeza
+    /// Cleanup strategy
     pub cleanup_strategy: CacheCleanupStrategy,
-    /// Compressão habilitada
+    /// Whether compression is enabled
     pub compression_enabled: bool,
 }
 
-/// Estratégias de limpeza de cache
+/// Cache cleanup strategies
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum CacheCleanupStrategy {
-    /// Menos recentemente usado
+    /// Least recently used
     LRU,
-    /// Primeiro a entrar, primeiro a sair
+    /// First in, first out
     FIFO,
-    /// Baseado em TTL
+    /// TTL-based
     TTL,
-    /// Limpeza manual
+    /// Manual cleanup
     Manual,
 }
 

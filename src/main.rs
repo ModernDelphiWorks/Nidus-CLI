@@ -1,33 +1,29 @@
 use clap::builder::styling::{AnsiColor, Effects};
 use clap::builder::Styles;
-use clap::{ArgMatches, Command};
+use clap::{Arg, ArgAction, ArgMatches, Command};
+use clap_complete::{generate, Shell};
 use colored::Colorize;
 use log::info;
-use nest4d::commands::command_trait::cmd_trait::ICommand;
-use nest4d::commands::options::{
+use nidus::commands::command_trait::cmd_trait::CliCommand;
+use nidus::commands::options::{
     option_info::CommandInfo, option_pattern::CommandPattern, option_template::CommandTemplate,
 };
-use nest4d::dto::config_global_dto::ConfigGlobalDTO;
-use nest4d::{
+use nidus::dto::config_global_dto::ConfigGlobalDTO;
+use nidus::error::Result;
+use nidus::{
     commands::{
-        cmd_add_paths::CommandAddPaths, cmd_gen::CommandGen, cmd_install::CommandInstall,
-        cmd_new::CommandNew, cmd_template::CommandTemplate as CmdTemplate, cmd_update::CommandUpdate,
+        cmd_add_paths::CommandAddPaths, cmd_clean::CommandClean, cmd_deps::CommandDeps,
+        cmd_doctor::CommandDoctor, cmd_gen::CommandGen, cmd_init::CommandInit,
+        cmd_install::CommandInstall, cmd_new::CommandNew, cmd_outdated::CommandOutdated,
+        cmd_remove::CommandRemove, cmd_template::CommandTemplate as CmdTemplate,
+        cmd_update::CommandUpdate,
     },
     core::core_utils::utils,
     init_logging,
 };
-use std::env;
+use std::io;
 
-
-fn main() {
-    // Inicializa logging
-    init_logging();
-    
-    // Debug detail
-    env::set_var("RUST_BACKTRACE", "1");
-    
-    info!("🚀 Iniciando nest4d-cli v{}", utils::version_str());
-
+fn build_cli() -> Command {
     let styles: Styles = Styles::styled()
         .header(AnsiColor::Green.on_default() | Effects::BOLD)
         .usage(AnsiColor::Green.on_default() | Effects::BOLD)
@@ -36,73 +32,109 @@ fn main() {
 
     let about_text = format!(
         "{}\n{}",
-        "⚡ Nest4D CLI".bright_yellow().bold(),
-        "Automate Delphi Nest4D code creation for faster development"
+        "⚡ Nidus CLI".bright_yellow().bold(),
+        "Automate Delphi Nidus code creation for faster development"
             .bright_white()
             .italic()
     );
 
-    let cmd: Command = Command::new("nest4d")
+    Command::new("Nidus")
         .version(utils::version_str())
+        .disable_version_flag(true)
         .styles(styles)
-        .bin_name("nest4d")
+        .bin_name("Nidus")
         .author("Isaque Pinheiro, isaquesp@gmail.com")
         .about(about_text)
-        .arg(CommandTemplate::arg())
-        .arg(CommandInfo::arg())
-        .arg(CommandPattern::arg())
+        .subcommand(CommandInfo::command())
+        .subcommand(CommandTemplate::command())
+        .subcommand(CommandPattern::command())
         .subcommand(CommandAddPaths::command())
         .subcommand(CommandNew::command())
         .subcommand(CommandGen::command())
         .subcommand(CommandInstall::command())
         .subcommand(CmdTemplate::command())
-        .subcommand(CommandUpdate::command());
+        .subcommand(CommandUpdate::command())
+        .subcommand(CommandDoctor::command())
+        .subcommand(CommandRemove::command())
+        .subcommand(CommandInit::command())
+        .subcommand(CommandClean::command())
+        .subcommand(CommandDeps::command())
+        .subcommand(CommandOutdated::command())
+        .subcommand(
+            Command::new("completions")
+                .about("🐚 Generate shell completion scripts")
+                .long_about(
+                    "Outputs a shell completion script to stdout.\n\
+                     Add the output to your shell profile to enable tab-completion.\n\n\
+                     Examples:\n  \
+                     Nidus completions bash >> ~/.bashrc\n  \
+                     Nidus completions zsh  >> ~/.zshrc\n  \
+                     Nidus completions fish > ~/.config/fish/completions/Nidus.fish",
+                )
+                .arg(
+                    Arg::new("shell")
+                        .help("Target shell (bash, zsh, fish, elvish, powershell)")
+                        .required(true)
+                        .value_parser(["bash", "zsh", "fish", "elvish", "powershell"]),
+                ),
+        )
+        .arg(
+            Arg::new("version")
+                .short('v')
+                .long("version")
+                .action(ArgAction::Version)
+                .help("Print version"),
+        )
+}
 
-    // Match
-    let matches: ArgMatches = cmd.get_matches();
-    // Create JSON if not found
-    utils::check_init_json_exist(&matches);
-    // Struct store data
-    let mut config_global: ConfigGlobalDTO = ConfigGlobalDTO::new();
-    // If options (tags), not executed match
-    let is_options: bool = _check_option_tag(&matches, &mut config_global);
-    // If not options (tags)
-    if !is_options {
-        match matches.subcommand() {
-            Some(("install", matches)) => CommandInstall::execute(&mut config_global, matches),
-            Some(("add-paths", matches)) => CommandAddPaths::execute(&mut config_global, matches),
-            Some(("new", matches)) => CommandNew::execute(&mut config_global, matches),
-            Some(("gen", matches)) => CommandGen::execute(&mut config_global, matches),
-            Some(("template", matches)) => CmdTemplate::execute(&mut config_global, matches),
-            Some(("update", matches)) => CommandUpdate::execute(&mut config_global, matches),
-            _ => unreachable!("clap should ensure we don't get here"),
-        };
-        // println!("{}", config_global);
+fn main() {
+    init_logging();
+    info!("🚀 Starting Nidus-cli v{}", utils::version_str());
+    if let Err(e) = run() {
+        utils::handle_error(e);
     }
 }
 
-fn _check_option_tag(matches: &ArgMatches, config_global: &mut ConfigGlobalDTO) -> bool {
-    let mut is_options: bool = false;
+fn run() -> Result<()> {
+    let mut cmd = build_cli();
+    let matches: ArgMatches = cmd.clone().get_matches();
 
-    match (
-        matches.get_flag("info"),
-        matches.get_flag("templates"),
-        matches.get_flag("pattern"),
-    ) {
-        (true, _, _) => {
-            CommandInfo::execute(config_global, matches);
-            is_options = true;
-        }
-        (_, true, _) => {
-            CommandTemplate::execute(config_global, matches);
-            is_options = true;
-        }
-        (_, _, true) => {
-            CommandPattern::execute(config_global, matches);
-            is_options = true;
-        }
-        _ => {}
+    // Shell completion — handled before loading nidus.json (no project context needed)
+    if let Some(("completions", sub)) = matches.subcommand() {
+        let shell: Shell = sub
+            .get_one::<String>("shell")
+            .unwrap()
+            .parse()
+            .expect("clap value_parser already validated the shell name");
+        generate(shell, &mut cmd, "Nidus", &mut io::stdout());
+        return Ok(());
     }
 
-    is_options
+    // Only `update` strictly requires an existing nidus.json.
+    // `install` handles a missing nidus.json itself — it creates a default one first.
+    if matches!(matches.subcommand_name(), Some("update")) {
+        utils::check_init_json_exist(&matches)?;
+    }
+
+    let mut config_global: ConfigGlobalDTO = ConfigGlobalDTO::new()?;
+
+    match matches.subcommand() {
+        Some(("info", sub))      => CommandInfo::execute(&mut config_global, sub),
+        Some(("templates", sub)) => CommandTemplate::execute(&mut config_global, sub),
+        Some(("pattern", sub))   => CommandPattern::execute(&mut config_global, sub),
+        Some(("install", sub))   => CommandInstall::execute(&mut config_global, sub),
+        Some(("sync", sub)) | Some(("add-paths", sub)) => CommandAddPaths::execute(&mut config_global, sub),
+        Some(("new", sub))       => CommandNew::execute(&mut config_global, sub),
+        Some(("gen", sub))       => CommandGen::execute(&mut config_global, sub),
+        Some(("template", sub))  => CmdTemplate::execute(&mut config_global, sub),
+        Some(("update", sub))    => CommandUpdate::execute(&mut config_global, sub),
+        Some(("doctor", sub))    => CommandDoctor::execute(&mut config_global, sub),
+        Some(("remove", sub)) | Some(("rm", sub)) => CommandRemove::execute(&mut config_global, sub),
+        Some(("init", sub))      => CommandInit::execute(&mut config_global, sub),
+        Some(("clean", sub))     => CommandClean::execute(&mut config_global, sub),
+        Some(("deps", sub))      => CommandDeps::execute(&mut config_global, sub),
+        Some(("outdated", sub))  => CommandOutdated::execute(&mut config_global, sub),
+        _ => {}
+    }
+    Ok(())
 }

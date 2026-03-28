@@ -3,7 +3,7 @@ unit AppModule;
 interface
 
 uses
-  nest4d.module;
+  Nidus.module;
 
 type
   TGardNFeMiddleware = class(TRouteMiddleware)

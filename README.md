@@ -1,6 +1,6 @@
-# Nest4D CLI
+# Nidus CLI
 
-🚀 **Nest4D Framework for Delphi** - A modern command-line tool for rapid Delphi application development inspired by NestJS.
+🚀 **Nidus Framework for Delphi** - A modern command-line tool for rapid Delphi application development inspired by NestJS.
 
 ## 📋 Table of Contents
 
@@ -24,40 +24,40 @@
 ### Installation via Cargo
 
 ```bash
-cargo install nest4d-cli
+cargo install Nidus-cli
 ```
 
 ### Installation via Binary
 
-Download the latest binary from the [releases page](https://github.com/ModernDelphiWorks/nest4d-cli/releases) and add it to your PATH.
+Download the latest binary from the [releases page](https://github.com/ModernDelphiWorks/Nidus-cli/releases) and add it to your PATH.
 
 ## 🚀 Quick Start
 
 ### 1. Create a new project
 
 ```bash
-nest4d new MyApp --path ./
+Nidus new MyApp --path ./
 ```
 
 ### 2. Install dependencies
 
 ```bash
 cd MyApp
-nest4d install
+Nidus install
 ```
 
 ### 3. Generate a module
 
 ```bash
-nest4d gen module User
+Nidus gen module User
 ```
 
 ### 4. Generate specific components
 
 ```bash
-nest4d gen controller User
-nest4d gen service User
-nest4d gen repository User
+Nidus gen controller User
+Nidus gen service User
+Nidus gen repository User
 ```
 
 ## 📚 Available Commands
@@ -65,7 +65,7 @@ nest4d gen repository User
 ### `new` - Create new project
 
 ```bash
-nest4d new <name> [--path <path>] [--with-tests]
+Nidus new <name> [--path <path>] [--with-tests]
 ```
 
 **Arguments:**
@@ -78,7 +78,7 @@ nest4d new <name> [--path <path>] [--with-tests]
 ### `gen` - Generate components
 
 ```bash
-nest4d gen <type> <name> [options]
+Nidus gen <type> <name> [options]
 ```
 
 **Available types:**
@@ -97,29 +97,67 @@ nest4d gen <type> <name> [options]
 - `--path <path>`: Specific path for generation
 - `--overwrite`: Overwrite existing files
 
-### `install` - Install dependencies
+### `install` - Install framework dependencies
 
 ```bash
-nest4d install
+Nidus install
 ```
 
-Installs all dependencies defined in `nest4d.json`.
+Clones all dependency repositories listed in `nidus.json` into `./dependencies`.
+
+> **Note:** To install custom code-generation templates, use `Nidus template install <source>`.
+
+### `update` - Update framework dependencies
+
+```bash
+Nidus update
+```
+
+Fetches updates for all dependency repositories in `./dependencies`.
+
+> **Note:** To update custom code-generation templates, use `Nidus template update`.
+
+### `sync` - Sync dependency paths to Delphi project
+
+```bash
+Nidus sync
+```
+
+Adds `src`/`Source` paths from `./dependencies` to the `.dproj` search path. Previously named `add-paths` (still works as alias).
+
+### `info` - Show CLI environment details
+
+```bash
+Nidus info
+```
+
+### `templates` - List built-in template types
+
+```bash
+Nidus templates
+```
+
+### `pattern` - Show architectural pattern reference
+
+```bash
+Nidus pattern
+```
 
 ### Other commands
 
 ```bash
-nest4d --version    # Shows version
-nest4d --help       # Shows help
+Nidus --version    # Shows version
+Nidus --help       # Shows help
 ```
 
 ## 🏗️ Project Structure
 
-A typical Nest4D project has the following structure:
+A typical Nidus project has the following structure:
 
 ```
 MyApp/
 ├── MyApp.dpr              # Main project file
-├── nest4d.json            # Project configuration
+├── Nidus.json            # Project configuration
 ├── src/
 │   ├── AppModule.pas       # Main application module
 │   └── modules/
@@ -140,48 +178,48 @@ MyApp/
 
 ```bash
 # Generates module, controller, service, repository, interface and infra
-nest4d gen module User
+Nidus gen module User
 ```
 
 ### Generating individual components
 
 ```bash
 # Only the controller
-nest4d gen controller Product
+Nidus gen controller Product
 
 # Service in a specific path
-nest4d gen service Order --path ./src/modules/orders
+Nidus gen service Order --path ./src/modules/orders
 
 # Overwrite existing file
-nest4d gen repository Customer --overwrite
+Nidus gen repository Customer --overwrite
 ```
 
 ### Flat structure (without subfolders)
 
 ```bash
 # Generates files directly in current folder
-nest4d gen module Auth --flat
+Nidus gen module Auth --flat
 ```
 
 ## ⚙️ Configuration
 
-The `nest4d.json` file contains the project configurations:
+The `Nidus.json` file contains the project configurations:
 
 ```json
 {
-  "name": "Nest4D",
-  "description": "Nest4D Framework for Delphi",
+  "name": "Nidus",
+  "description": "Nidus Framework for Delphi",
   "version": "1.0.0",
   "homepage": "https://www.nest4f.com.br",
   "srcmain": "src",
   "projects": [],
-  "download": "https://github.com/ModernDelphiWorks/nest4d.git",
+  "download": "https://github.com/ModernDelphiWorks/Nidus.git",
   "dependencies": [
     "https://github.com/HashLoad/horse.git",
 
 ## 🎨 Template System
 
-Nest4D CLI uses a standardized template system with the following features:
+Nidus CLI uses a standardized template system with the following features:
 
 ### Template Variables
 
@@ -216,10 +254,10 @@ end.
 
 ### Adding dependencies
 
-Edit the `dependencies` array in `nest4d.json` and run:
+Edit the `dependencies` array in `Nidus.json` and run:
 
 ```bash
-nest4d install
+Nidus install
 ```
 
 ## 🧪 Running Tests
@@ -241,7 +279,7 @@ cargo test -- --nocapture
 ### Version 0.1.0
 
 - ✅ **Simplified Command Syntax**: Clean and intuitive `new` command
-  - Usage: `nest4d new MyApp`
+  - Usage: `Nidus new MyApp`
 
 - ✅ **Standardized Template System**: All templates now use `{{variable}}` syntax
   - Consistent variable substitution across all templates
@@ -267,8 +305,8 @@ cargo test -- --nocapture
 
 ```bash
 # Clone the repository
-git clone https://github.com/your-repo/nest4d-cli.git
-cd nest4d-cli
+git clone https://github.com/your-repo/Nidus-cli.git
+cd Nidus-cli
 
 # Install dependencies
 cargo build
@@ -286,10 +324,10 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ## 🆘 Support
 
-- 📖 [Documentation](https://nest4d.dev)
-- 🐛 [Report Bug](https://github.com/your-repo/nest4d-cli/issues)
-- 💡 [Request Feature](https://github.com/your-repo/nest4d-cli/issues)
-- 💬 [Discussions](https://github.com/your-repo/nest4d-cli/discussions)
+- 📖 [Documentation](https://Nidus.dev)
+- 🐛 [Report Bug](https://github.com/your-repo/Nidus-cli/issues)
+- 💡 [Request Feature](https://github.com/your-repo/Nidus-cli/issues)
+- 💬 [Discussions](https://github.com/your-repo/Nidus-cli/discussions)
 
 ## 🎯 Roadmap
 

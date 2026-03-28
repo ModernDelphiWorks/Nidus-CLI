@@ -1,116 +1,116 @@
-//! Comando para gerenciamento de templates
-//! 
-//! Este comando permite:
-//! - Listar templates disponíveis
-//! - Instalar novos templates
-//! - Criar templates customizados
-//! - Configurar templates
+//! Template management command.
+//!
+//! Supports: listing, installing, creating, configuring, updating, testing, and exporting templates.
 
+use crate::commands::cmd_update::{update_repo, UpdateStatus};
+use crate::core::core_utils::utils;
 use crate::error::CliError;
 use crate::templates::*;
+use crate::validation::validate_git_url;
 use clap::{Args, Subcommand};
 use colored::*;
+use git2::{build::RepoBuilder, FetchOptions, RemoteCallbacks};
 use serde_json;
 use std::collections::HashMap;
 use std::fs;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 
-/// Comando para gerenciamento de templates
+/// Template management command
 #[derive(Debug, Args)]
 pub struct TemplateCommand {
     #[command(subcommand)]
     pub action: TemplateAction,
 }
 
-/// Ações disponíveis para templates
+/// Available template actions
 #[derive(Debug, Subcommand)]
 pub enum TemplateAction {
-    /// Lista todos os templates disponíveis
+    /// List all available templates
     List {
-        /// Mostra apenas templates favoritos
+        /// Show only favorite templates
         #[arg(short, long)]
         favorites: bool,
-        /// Filtro por categoria
+        /// Filter by category
         #[arg(short, long)]
         category: Option<String>,
     },
-    /// Mostra informações detalhadas de um template
+    /// Show detailed information about a template
     Info {
-        /// Nome do template
+        /// Template name
         name: String,
     },
-    /// Instala um template externo
+    /// Install an external template
     Install {
-        /// URL ou nome do template
+        /// Template source URL or name
         source: String,
-        /// Nome local para o template
+        /// Local name for the template
         #[arg(short, long)]
         name: Option<String>,
-        /// Força reinstalação
+        /// Force reinstallation
         #[arg(short, long)]
         force: bool,
     },
-    /// Remove um template
+    /// Remove a template
     Remove {
-        /// Nome do template
+        /// Template name
         name: String,
-        /// Confirma remoção sem perguntar
+        /// Confirm removal without prompting
         #[arg(short, long)]
         yes: bool,
     },
-    /// Cria um novo template
+    /// Create a new template
     Create {
-        /// Nome do template
+        /// Template name
         name: String,
-        /// Descrição do template
+        /// Template description
         #[arg(short, long)]
         description: Option<String>,
-        /// Diretório base para criar o template
+        /// Base directory to create the template from
         #[arg(short, long)]
         from: Option<PathBuf>,
     },
-    /// Configura um template
+    /// Configure a template
     Config {
-        /// Nome do template
+        /// Template name
         name: String,
-        /// Chave de configuração
+        /// Configuration key
         key: Option<String>,
-        /// Valor da configuração
+        /// Configuration value
         value: Option<String>,
     },
-    /// Atualiza templates externos
+    /// Update external templates
     Update {
-        /// Nome específico do template (opcional)
+        /// Specific template name (optional)
         name: Option<String>,
-        /// Atualiza todos os templates
+        /// Update all installed templates
         #[arg(short, long)]
         all: bool,
     },
-    /// Testa um template
+    /// Test a template by rendering it to a temporary directory
     Test {
-        /// Nome do template
+        /// Template name
         name: String,
-        /// Diretório de teste
+        /// Output directory for rendered files
         #[arg(short, long)]
         output: Option<PathBuf>,
     },
-    /// Exporta templates embutidos para o disco
+    /// Export built-in templates to disk for customization
     Export {
-        /// Nome do template (opcional, se não especificado exporta todos)
+        /// Template name (optional; exports all if omitted)
         name: Option<String>,
-        /// Diretório de destino
+        /// Destination directory
         #[arg(short, long)]
         output: Option<PathBuf>,
-        /// Força sobrescrita de arquivos existentes
+        /// Overwrite existing files
         #[arg(short, long)]
         force: bool,
     },
 }
 
 impl TemplateCommand {
-    /// Executa o comando de template
+    /// Executes the template command
     pub fn execute(&self) -> Result<(), CliError> {
-        let templates_dir = get_templates_directory()?;
+        let templates_dir = utils::get_templates_directory()?;
         let mut manager = TemplateManager::new(templates_dir)?;
         
         match &self.action {
@@ -144,7 +144,7 @@ impl TemplateCommand {
          }
     }
 
-    /// Lista templates disponíveis
+    /// Lists available templates
     fn list_templates(
         &self,
         manager: &mut TemplateManager,
@@ -163,18 +163,18 @@ impl TemplateCommand {
 
         for template_name in templates {
             if let Ok(template) = manager.get_template(&template_name) {
-                // Filtros
-                if favorites_only {
-                    // TODO: Implementar sistema de favoritos
-                    continue;
-                }
-                
-                if let Some(_cat) = category {
-                    // TODO: Implementar categorias
+                // Apply filters
+                if favorites_only && !template.favorite {
                     continue;
                 }
 
-                // Exibe informações do template
+                if let Some(cat) = category {
+                    if template.category.as_deref() != Some(cat) {
+                        continue;
+                    }
+                }
+
+                // Display template details
                 println!("  {} {}", "●".green(), template.name.bold());
                 println!("    {}", template.description.dimmed());
                 println!("    {} {}", "Version:".dimmed(), template.version);
@@ -191,7 +191,7 @@ impl TemplateCommand {
         Ok(())
     }
 
-    /// Mostra informações detalhadas de um template
+    /// Shows detailed information about a template
     fn show_template_info(&self, manager: &mut TemplateManager, name: &str) -> Result<(), CliError> {
         let template = manager.get_template(name)?;
         
@@ -235,34 +235,64 @@ impl TemplateCommand {
         Ok(())
     }
 
-    /// Instala um template externo
+    /// Installs an external template via git clone
     fn install_template(
-         &self,
-         _manager: &mut TemplateManager,
-         source: &str,
-         name: Option<&str>,
-         _force: bool,
-     ) -> Result<(), CliError> {
-        let template_name = name.unwrap_or_else(|| {
-            source.split('/').last().unwrap_or("unknown")
+        &self,
+        _manager: &mut TemplateManager,
+        source: &str,
+        name: Option<&str>,
+        force: bool,
+    ) -> Result<(), CliError> {
+        validate_git_url(source)?;
+
+        let repo_name = name
+            .map(|n| n.to_string())
+            .or_else(|| utils::extract_repo_name(source))
+            .ok_or_else(|| CliError::validation_error("Could not determine template name from URL — use --name"))?;
+
+        let templates_dir = utils::get_templates_directory()?;
+        let dest = templates_dir.join(&repo_name);
+
+        if dest.exists() {
+            if force {
+                fs::remove_dir_all(&dest).map_err(CliError::IoError)?;
+            } else {
+                return Err(CliError::validation_error(format!(
+                    "Template '{}' is already installed. Use --force to reinstall or `Nidus template update`.",
+                    repo_name
+                )));
+            }
+        }
+
+        println!("{} Cloning template '{}'...", "📦".blue(), repo_name.bold());
+
+        let mut callbacks = RemoteCallbacks::new();
+        callbacks.credentials(|_url, username, allowed| {
+            if allowed.is_ssh_key() {
+                git2::Cred::ssh_key_from_agent(username.unwrap_or("git"))
+            } else {
+                git2::Cred::default()
+            }
         });
-        
-        println!("{} template '{}' from '{}'...", "Installing".bold().blue(), template_name, source);
-        
-        // TODO: Implementar download real
-        // TODO: Implementar instalação de template
-        println!("{} Installing template '{}' from '{}'...", "📦".blue().bold(), template_name, source);
-        
-        println!("{} Template '{}' installed successfully!", "✓".green().bold(), template_name);
+
+        let mut fetch_opts = FetchOptions::new();
+        fetch_opts.remote_callbacks(callbacks);
+
+        RepoBuilder::new()
+            .fetch_options(fetch_opts)
+            .clone(source, &dest)
+            .map_err(|e| CliError::validation_error(format!("Failed to clone template: {}", e)))?;
+
+        println!("{} Template '{}' installed at {:?}", "✅".green(), repo_name.bold(), dest);
         Ok(())
     }
 
-    /// Remove um template
+    /// Removes a template
     fn remove_template(&self, _manager: &mut TemplateManager, name: &str, yes: bool) -> Result<(), CliError> {
         if !yes {
             println!("{} Are you sure you want to remove template '{}'? [y/N]", "?".yellow().bold(), name);
             let mut input = String::new();
-            std::io::stdin().read_line(&mut input).map_err(|e| CliError::IoError(e))?;
+            std::io::stdin().read_line(&mut input).map_err(CliError::IoError)?;
             
             if !input.trim().to_lowercase().starts_with('y') {
                 println!("{}", "Operation cancelled.".yellow());
@@ -270,11 +300,11 @@ impl TemplateCommand {
             }
         }
         
-        let templates_dir = get_templates_directory()?;
+        let templates_dir = utils::get_templates_directory()?;
         let template_path = templates_dir.join(name);
         
         if template_path.exists() {
-            fs::remove_dir_all(&template_path).map_err(|e| CliError::IoError(e))?;
+            fs::remove_dir_all(&template_path).map_err(CliError::IoError)?;
             println!("{} Template '{}' removed successfully!", "✓".green().bold(), name);
         } else {
             println!("{} Template '{}' not found.", "!".yellow().bold(), name);
@@ -283,87 +313,239 @@ impl TemplateCommand {
         Ok(())
     }
 
-    /// Cria um novo template
+    /// Creates a new template, optionally scanning `.pas` files from `--from <dir>`
     fn create_template(
         &self,
         _manager: &mut TemplateManager,
         name: &str,
         description: Option<&str>,
-        _from: Option<&PathBuf>,
+        from: Option<&PathBuf>,
     ) -> Result<(), CliError> {
-        let templates_dir = get_templates_directory()?;
+        let templates_dir = utils::get_templates_directory()?;
         let template_dir = templates_dir.join(name);
-        
+
         if template_dir.exists() {
             return Err(CliError::ValidationError(format!("Template '{}' already exists", name)));
         }
-        
-        fs::create_dir_all(&template_dir).map_err(|e| CliError::IoError(e))?;
-        
-        // Cria configuração básica
+
+        fs::create_dir_all(&template_dir).map_err(CliError::IoError)?;
+
+        // Scan .pas files if --from was provided
+        let files = if let Some(src_dir) = from {
+            if !src_dir.exists() {
+                return Err(CliError::validation_error(format!(
+                    "Source directory not found: {}",
+                    src_dir.display()
+                )));
+            }
+            self.scan_pas_files_as_template(src_dir)?
+        } else {
+            Vec::new()
+        };
+
+        let file_count = files.len();
         let template_config = TemplateConfig {
             name: name.to_string(),
             description: description.unwrap_or("Custom template").to_string(),
             version: "1.0.0".to_string(),
-            author: Some("Custom".to_string()),
+            author: None,
+            category: None,
+            favorite: false,
             variables: HashMap::new(),
-            files: Vec::new(),
+            files,
             dependencies: Vec::new(),
+            config: HashMap::new(),
         };
-        
+
         let config_path = template_dir.join("template.json");
         let config_content = serde_json::to_string_pretty(&template_config)
-            .map_err(|e| CliError::JsonError(e))?;
-        
-        fs::write(&config_path, config_content).map_err(|e| CliError::IoError(e))?;
-        
-        println!("{} Template '{}' created at {:?}", "✓".green().bold(), name, template_dir);
-        println!("{} Edit {:?} to configure your template", "→".blue().bold(), config_path);
-        
+            .map_err(CliError::JsonError)?;
+        fs::write(&config_path, config_content).map_err(CliError::IoError)?;
+
+        if let Some(src) = from {
+            println!(
+                "{} Template '{}' created from {} with {} file(s)",
+                "✅".green(),
+                name.bold(),
+                src.display(),
+                file_count
+            );
+            println!(
+                "{}  '{{{{mod}}}}' placeholders substituted where the module name was detected.",
+                "ℹ️ ".blue()
+            );
+        } else {
+            println!("{} Template '{}' created at {}", "✅".green(), name.bold(), template_dir.display());
+        }
+        println!("{} Edit {} to configure your template", "→".blue().bold(), config_path.display());
+
         Ok(())
     }
 
-    /// Configura um template
+    /// Scans `.pas` files in `src_dir` and builds `TemplateFile` entries,
+    /// replacing the CamelCase module name (derived from the dir name) with `{{mod}}`.
+    fn scan_pas_files_as_template(&self, src_dir: &PathBuf) -> Result<Vec<TemplateFile>, CliError> {
+        let dir_name = src_dir
+            .file_name()
+            .map(|n| n.to_string_lossy().to_string())
+            .unwrap_or_default();
+        let camel_name = utils::camel_case(&dir_name);
+
+        let mut files = Vec::new();
+        for entry in fs::read_dir(src_dir).map_err(CliError::IoError)? {
+            let entry = entry.map_err(CliError::IoError)?;
+            let path = entry.path();
+            if !path.is_file() {
+                continue;
+            }
+            let ext = path.extension().map(|e| e.to_string_lossy().to_lowercase());
+            if ext.as_deref() != Some("pas") {
+                continue;
+            }
+
+            let raw_filename = path.file_name().unwrap().to_string_lossy().to_string();
+            let raw_content = fs::read_to_string(&path).map_err(CliError::IoError)?;
+
+            let (template_filename, template_content) = if !camel_name.is_empty() {
+                (
+                    raw_filename.replace(&camel_name, "{{mod}}"),
+                    raw_content.replace(&camel_name, "{{mod}}"),
+                )
+            } else {
+                (raw_filename.clone(), raw_content)
+            };
+
+            files.push(TemplateFile {
+                name: raw_filename,
+                path: template_filename,
+                content: template_content,
+                process: true,
+            });
+        }
+
+        Ok(files)
+    }
+
+    /// Configures a template — persists key=value into template.json
     fn configure_template(
         &self,
         _manager: &mut TemplateManager,
-        _name: &str,
+        name: &str,
         key: Option<&str>,
         value: Option<&str>,
     ) -> Result<(), CliError> {
-        println!("{} Configuring template '{}'...", "⚙".blue().bold(), _name);
-        
-        // TODO: Implementar configuração interativa
-        if let (Some(k), Some(v)) = (key, value) {
-            println!("{} Set {} = {}", "✓".green().bold(), k, v);
-        } else {
-            println!("{} Interactive configuration not implemented yet", "!".yellow().bold());
+        let templates_dir = utils::get_templates_directory()?;
+        let config_path = templates_dir.join(name).join("template.json");
+
+        if !config_path.exists() {
+            return Err(CliError::validation_error(format!(
+                "Template '{}' not found (expected {:?})",
+                name, config_path
+            )));
         }
-        
+
+        let content = fs::read_to_string(&config_path).map_err(CliError::IoError)?;
+        let mut template: TemplateConfig =
+            serde_json::from_str(&content).map_err(CliError::JsonError)?;
+
+        match (key, value) {
+            (Some(k), Some(v)) => {
+                template.config.insert(k.to_string(), v.to_string());
+                let updated =
+                    serde_json::to_string_pretty(&template).map_err(CliError::JsonError)?;
+                fs::write(&config_path, updated).map_err(CliError::IoError)?;
+                println!(
+                    "{} Set {} = {} in template '{}'",
+                    "✅".green(),
+                    k.bold(),
+                    v,
+                    name
+                );
+            }
+            _ => {
+                println!("{} Configuration for '{}':", "⚙".blue().bold(), name);
+                if template.config.is_empty() {
+                    println!("  (no custom configuration set)");
+                } else {
+                    for (k, v) in &template.config {
+                        println!("  {} = {}", k.bold(), v);
+                    }
+                }
+            }
+        }
+
         Ok(())
     }
 
-    /// Atualiza templates
+    /// Updates installed templates via git pull (fast-forward)
     fn update_templates(
         &self,
         _manager: &TemplateManager,
         name: Option<&str>,
-        all: bool,
+        _all: bool,
     ) -> Result<(), CliError> {
-        if all {
-            println!("{} Updating all templates...", "⟳".blue().bold());
-        } else if let Some(template_name) = name {
-            println!("{} Updating template '{}'...", "⟳".blue().bold(), template_name);
+        let templates_dir = utils::get_templates_directory()?;
+
+        // Collect candidate directories
+        let candidates: Vec<_> = if let Some(n) = name {
+            vec![templates_dir.join(n)]
         } else {
-            return Err(CliError::ValidationError("Specify --all or template name".to_string()));
+            match fs::read_dir(&templates_dir) {
+                Ok(rd) => rd
+                    .filter_map(|e| e.ok())
+                    .filter(|e| e.path().is_dir())
+                    .map(|e| e.path())
+                    .collect(),
+                Err(_) => vec![],
+            }
+        };
+
+        if candidates.is_empty() {
+            println!("{}", "No installed templates found.".yellow());
+            return Ok(());
         }
-        
-        // TODO: Implementar atualização real
-        println!("{} Update completed!", "✓".green().bold());
+
+        println!("{}", "\n🔄 Updating templates...\n".cyan());
+
+        let mut updated = 0usize;
+        let mut up_to_date = 0usize;
+        let mut skipped = 0usize;
+
+        for dir in &candidates {
+            let dir_name = dir.file_name().unwrap_or_default().to_string_lossy();
+
+            // Skip directories that are not git repos
+            if !dir.join(".git").exists() {
+                println!("{} {} — not a git repository, skipping", "⏭".dimmed(), dir_name.dimmed());
+                skipped += 1;
+                continue;
+            }
+
+            match update_repo(&dir.to_string_lossy(), "") {
+                Ok(UpdateStatus::FastForwarded) => {
+                    println!("{} {}", "✅ Updated:".green(), dir_name.green());
+                    updated += 1;
+                }
+                Ok(UpdateStatus::UpToDate) => {
+                    println!("{} {}", "🔁 Already up to date:".blue(), dir_name.blue());
+                    up_to_date += 1;
+                }
+                Err(e) => {
+                    println!("{} {}: {}", "⚠️ ".yellow(), dir_name.yellow(), e);
+                    skipped += 1;
+                }
+            }
+        }
+
+        println!("\n{}: {}  {}: {}  {}: {}",
+            "✅ Updated".bold(), updated,
+            "🔁 Up to date".bold(), up_to_date,
+            "⏭ Skipped".bold(), skipped,
+        );
         Ok(())
     }
 
-    /// Testa um template
+    /// Tests a template by rendering it to a temporary directory
     fn test_template(
         &self,
         manager: &mut TemplateManager,
@@ -374,32 +556,32 @@ impl TemplateCommand {
         
         let template = manager.get_template(name)?;
         let test_dir = output.cloned().unwrap_or_else(|| {
-            std::env::temp_dir().join(format!("nest4d_test_{}", name))
+            std::env::temp_dir().join(format!("Nidus_test_{}", name))
         });
         
-        // Cria variáveis de teste
+        // Build test variables
         let mut test_variables = HashMap::new();
         test_variables.insert("mod".to_string(), "TestModule".to_string());
         test_variables.insert("author".to_string(), "Test Author".to_string());
-        
-        // Processa template
+
+        // Process template
         let _processor = TemplateProcessor::new();
         let context = ProcessingContext {
             variables: test_variables,
             ..Default::default()
         };
-        
+
         let processed_files = manager.process_template(&template, &context.variables)?;
-        
-        // Cria arquivos de teste
-        fs::create_dir_all(&test_dir).map_err(|e| CliError::IoError(e))?;
+
+        // Write test output files
+        fs::create_dir_all(&test_dir).map_err(CliError::IoError)?;
         
         for (file_path, content) in processed_files {
             let full_path = test_dir.join(&file_path);
             if let Some(parent) = full_path.parent() {
-                fs::create_dir_all(parent).map_err(|e| CliError::IoError(e))?;
+                fs::create_dir_all(parent).map_err(CliError::IoError)?;
             }
-            fs::write(&full_path, content).map_err(|e| CliError::IoError(e))?;
+            fs::write(&full_path, content).map_err(CliError::IoError)?;
             println!("{} Created: {}", "✓".green(), file_path);
         }
         
@@ -407,7 +589,7 @@ impl TemplateCommand {
         Ok(())
     }
 
-    /// Exporta templates embutidos para o disco para personalização
+    /// Exports built-in templates to disk for customization
     fn export_templates(
         &self,
         manager: &mut TemplateManager,
@@ -421,14 +603,14 @@ impl TemplateCommand {
         
         println!("{} Exporting templates to: {}", "📦".blue().bold(), export_dir.display());
         
-        // Cria o diretório de destino
-        fs::create_dir_all(&export_dir).map_err(|e| CliError::IoError(e))?;
-        
+        // Create destination directory
+        fs::create_dir_all(&export_dir).map_err(CliError::IoError)?;
+
         if let Some(name) = template_name {
-            // Exporta um template específico
+            // Export a single named template
             self.export_single_template(manager, name, &export_dir, force)?;
         } else {
-            // Exporta todos os templates built-in
+            // Export all built-in templates
             self.export_all_builtin_templates(&export_dir, force)?;
         }
         
@@ -439,20 +621,20 @@ impl TemplateCommand {
         Ok(())
     }
     
-    /// Exporta um template específico
+    /// Exports a single named template to the given directory
     fn export_single_template(
         &self,
         manager: &mut TemplateManager,
         name: &str,
-        export_dir: &PathBuf,
+        export_dir: &Path,
         force: bool,
     ) -> Result<(), CliError> {
         let template = manager.get_template(name)?;
         let template_dir = export_dir.join(&template.name);
         
-        fs::create_dir_all(&template_dir).map_err(|e| CliError::IoError(e))?;
+        fs::create_dir_all(&template_dir).map_err(CliError::IoError)?;
         
-        // Exporta arquivos do template
+        // Export template files
         for file in &template.files {
             let file_path = template_dir.join(&file.name);
             
@@ -461,34 +643,34 @@ impl TemplateCommand {
                 continue;
             }
             
-            fs::write(&file_path, &file.content).map_err(|e| CliError::IoError(e))?;
+            fs::write(&file_path, &file.content).map_err(CliError::IoError)?;
             println!("{} Exported: {}", "✓".green(), file_path.display());
         }
         
-        // Cria arquivo de configuração do template
+        // Write template configuration file
         let config_path = template_dir.join("template.json");
         if !config_path.exists() || force {
             let config_json = serde_json::to_string_pretty(&template)
-                .map_err(|e| CliError::JsonError(e))?;
-            fs::write(&config_path, config_json).map_err(|e| CliError::IoError(e))?;
+                .map_err(CliError::JsonError)?;
+            fs::write(&config_path, config_json).map_err(CliError::IoError)?;
             println!("{} Configuration: {}", "✓".green(), config_path.display());
         }
         
         Ok(())
     }
     
-    /// Exporta todos os templates built-in
+    /// Exports all built-in templates to the given directory
     fn export_all_builtin_templates(
         &self,
-        export_dir: &PathBuf,
+        export_dir: &Path,
         force: bool,
     ) -> Result<(), CliError> {
-        // Cria arquivo README explicativo
+        // Create README documentation file
         let readme_path = export_dir.join("README.md");
         if !readme_path.exists() || force {
-            let readme_content = r#"# Custom Nest4D CLI Templates
+            let readme_content = r#"# Custom Nidus CLI Templates
 
-This directory contains exported Nest4D CLI templates that you can customize.
+This directory contains exported Nidus CLI templates that you can customize.
 
 ## Structure
 
@@ -516,13 +698,13 @@ This directory contains exported Nest4D CLI templates that you can customize.
 - `{{upperCase(text)}}` - Convert to UPPERCASE
 - `{{lowerCase(text)}}` - Convert to lowercase
 "#;
-            fs::write(&readme_path, readme_content).map_err(|e| CliError::IoError(e))?;
+            fs::write(&readme_path, readme_content).map_err(CliError::IoError)?;
             println!("{} Documentation: {}", "✓".green(), readme_path.display());
         }
         
-        // Exporta templates de módulo
+        // Export module templates
         let module_dir = export_dir.join("module");
-        fs::create_dir_all(&module_dir).map_err(|e| CliError::IoError(e))?;
+        fs::create_dir_all(&module_dir).map_err(CliError::IoError)?;
         
         let module_templates = [
             ("controller.pas", include_str!("../templates/module/controller.pas")),
@@ -537,14 +719,14 @@ This directory contains exported Nest4D CLI templates that you can customize.
         for (filename, content) in module_templates.iter() {
             let file_path = module_dir.join(filename);
             if !file_path.exists() || force {
-                fs::write(&file_path, content).map_err(|e| CliError::IoError(e))?;
+                fs::write(&file_path, content).map_err(CliError::IoError)?;
                 println!("{} Module template: {}", "✓".green(), file_path.display());
             }
         }
         
-        // Exporta templates de projeto
+        // Export project templates
         let project_dir = export_dir.join("project");
-        fs::create_dir_all(&project_dir).map_err(|e| CliError::IoError(e))?;
+        fs::create_dir_all(&project_dir).map_err(CliError::IoError)?;
         
         let project_templates = [
             ("app_module.pas", include_str!("../templates/project/app_module.pas")),
@@ -554,7 +736,7 @@ This directory contains exported Nest4D CLI templates that you can customize.
         for (filename, content) in project_templates.iter() {
             let file_path = project_dir.join(filename);
             if !file_path.exists() || force {
-                fs::write(&file_path, content).map_err(|e| CliError::IoError(e))?;
+                fs::write(&file_path, content).map_err(CliError::IoError)?;
                 println!("{} Project template: {}", "✓".green(), file_path.display());
             }
         }
@@ -564,17 +746,3 @@ This directory contains exported Nest4D CLI templates that you can customize.
     }
 }
 
-/// Obtém o diretório de templates
-fn get_templates_directory() -> Result<PathBuf, CliError> {
-    let home = std::env::var("HOME")
-        .or_else(|_| std::env::var("USERPROFILE"))
-        .map_err(|_| CliError::ValidationError("Could not find home directory".to_string()))?;
-    
-    let templates_dir = PathBuf::from(home).join(".nest4d").join("templates");
-    
-    if !templates_dir.exists() {
-        fs::create_dir_all(&templates_dir).map_err(|e| CliError::IoError(e))?;
-    }
-    
-    Ok(templates_dir)
-}

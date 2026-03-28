@@ -1,79 +1,67 @@
 {
-    "version": "2.0.0",
-    "tasks": [
-        {
-            "label": "cargo build",
-            "dependsOn": [
-                "cargo build example"
-            ]
-        },
-        {
-            "label": "cargo build release",
-            "dependsOn": [
-                "cargo build example release"
-            ]
-        },
-        {
-            "label": "cargo build example",
-            "type": "cargo",
-            "command": "build",
-            "args": [],
-            "problemMatcher": [
-                "$rustc"
-            ],
-            "options": {
-                "cwd": "${workspaceFolder}"
-            },
-        },
-        {
-            "label": "cargo build example release",
-            "type": "cargo",
-            "command": "build",
-            "args": [
-                "--release"
-            ],
-            "problemMatcher": [
-                "$rustc"
-            ],
-            "options": {
-                "cwd": "${workspaceFolder}"
-            },
-        },
-        {
-            "label": "release and publish to GitHub",
-            "type": "shell",
-            "command": "powershell",
-            "args": [
-                "-ExecutionPolicy",
-                "Bypass",
-                "-File",
-                "./release.ps1"
-            ],
-            "group": "build",
-            "presentation": {
-                "echo": true,
-                "reveal": "always",
-                "focus": true,
-                "panel": "shared"
-            },
-            "problemMatcher": ["$rustc"]
-        },
-        {
-            "label": "prepare release (build only)",
-            "type": "shell",
-            "command": "powershell",
-            "args": [
-                "-Command",
-                "Write-Host 'Building release version...' -ForegroundColor Yellow; cargo build --release; if ($LASTEXITCODE -eq 0) { Write-Host 'Release build successful!' -ForegroundColor Green; Write-Host 'Executable location: target/release/nest4d.exe' -ForegroundColor Cyan; Write-Host 'Ready to commit and push to https://github.com/ModernDelphiWorks/nest4d-cli' -ForegroundColor Yellow; git status; } else { Write-Host 'Build failed!' -ForegroundColor Red }"
-            ],
-            "group": "build",
-            "presentation": {
-                "echo": true,
-                "reveal": "always",
-                "focus": false,
-                "panel": "shared"
-            },
-            "problemMatcher": ["$rustc"]
-        }
-    ]
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "cargo build",
+      "dependsOn": [
+        "cargo build example"
+      ],
+      "group": {
+        "kind": "build",
+        "isDefault": true
+      }
+    },
+    {
+      "label": "cargo build release",
+      "dependsOn": [
+        "cargo build example release"
+      ]
+    },
+    {
+      "label": "cargo build example",
+      "type": "shell",
+      "command": "cargo build",
+      "args": [],
+      "problemMatcher": [
+        "$rustc"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      }
+    },
+    {
+      "label": "cargo build example release",
+      "type": "shell",
+      "command": "cargo build --release",
+      "args": [],
+      "problemMatcher": [
+        "$rustc"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      }
+    },
+    {
+      "label": "prepare release (build only)",
+      "type": "shell",
+      "command": "bash",
+      "args": [
+        "-lc",
+        "echo 'Building release version...'; cargo build --release; if [ $? -eq 0 ]; then echo 'Release build successful!'; echo 'Executable location:'; find target/release -maxdepth 1 -type f; git status; else echo 'Build failed!'; fi"
+      ],
+      "group": "build",
+      "presentation": {
+        "echo": true,
+        "reveal": "always",
+        "focus": false,
+        "panel": "shared"
+      },
+      "problemMatcher": [
+        "$rustc"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      }
+    }
+  ]
 }

@@ -3,7 +3,7 @@ use thiserror::Error;
 /// Tipo de resultado customizado para a aplicação
 pub type Result<T> = std::result::Result<T, CliError>;
 
-/// Enum de erros customizados para o nest4d-cli
+/// Enum de erros customizados para o Nidus-cli
 #[derive(Error, Debug)]
 pub enum CliError {
     #[error("I/O error: {0}")]
@@ -27,7 +27,7 @@ pub enum CliError {
     #[error("Invalid module name: '{0}'. Use only letters, numbers and underscore.")]
     InvalidModuleName(String),
 
-    #[error("Project not found. Run 'nest4d new <name>' first.")]
+    #[error("Project not found. Run 'Nidus new <name>' first.")]
     ProjectNotFound,
 
     #[error("File already exists: {0}. Use --overwrite to overwrite.")]

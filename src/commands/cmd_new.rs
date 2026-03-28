@@ -1,7 +1,7 @@
 use super::super::core::core_utils::utils;
 use super::super::dto::cmd_new_dto::CommandNewDTO;
 use super::super::dto::config_global_dto::ConfigGlobalDTO;
-use super::command_trait::cmd_trait::ICommand;
+use super::command_trait::cmd_trait::CliCommand;
 use crate::core::core_generate_project::project;
 use crate::validation::{validate_project_name, validate_project_path};
 use crate::error::CliError;
@@ -12,10 +12,7 @@ use std::path::PathBuf;
 
 pub struct CommandNew;
 
-impl ICommand for CommandNew {
-    fn new() -> Self {
-        Self
-    }
+impl CliCommand for CommandNew {
 
     fn arg() -> Arg {
         Arg::new("")
@@ -23,7 +20,7 @@ impl ICommand for CommandNew {
 
     fn command() -> Command {
         Command::new("new")
-            .about("🆕 Create a new Nest4d project")
+            .about("🆕 Create a new Nidus project")
             .arg(
                 Arg::new("project_name")
                     .value_name("NAME")
@@ -65,18 +62,18 @@ impl ICommand for CommandNew {
             utils::handle_error(e);
         }
 
-        // Salva DTO, mesmo que drivers não sejam mais usados
+        // Save DTO for other commands that may read it
         let command_new: CommandNewDTO = CommandNewDTO::new(path.clone(), project_name.clone());
         global_dto.set_command_new(command_new);
 
-        // Gera estrutura de projeto
+        // Generate project structure
         if let Err(err) =
             project::generate_project_structure(path.clone(), &project_name, include_tests)
         {
             let cli_error = CliError::from(err);
             utils::handle_error(cli_error);
         } else {
-            info!("Projeto '{}' criado com sucesso em {}", project_name, path.join(&project_name).display());
+            info!("Project '{}' created successfully at {}", project_name, path.join(&project_name).display());
             println!(
                 "{} Project '{}' created successfully at {}",
                 "✅".green(),

@@ -1,4 +1,4 @@
-//! Módulo de templates do Nest4D CLI
+//! Módulo de templates do Nidus CLI
 //! 
 //! Este módulo gerencia todos os templates disponíveis no sistema,
 //! incluindo templates built-in e customizados.

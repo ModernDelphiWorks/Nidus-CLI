@@ -7,60 +7,66 @@ pub mod module {
     use crate::error::CliError;
     use std::{fs, path::PathBuf};
 
-    /// Obtém o conteúdo de um template de forma inteligente (disco primeiro, depois embutido)
-    fn get_template_content(template_manager: &mut TemplateManager, component: &str) -> Result<String, CliError> {
-        // Tenta obter template customizado primeiro
-        if let Ok(template) = template_manager.get_template(&format!("module-{}", component)) {
-            if let Some(file) = template.files.iter().find(|f| f.name.contains(component)) {
-                return Ok(file.content.clone());
+    /// Resolves template content intelligently (named template → disk convention → built-in)
+    fn get_template_content(
+        template_manager: &mut TemplateManager,
+        component: &str,
+        template_name: Option<&str>,
+    ) -> Result<String, CliError> {
+        // 1. If --template was given, try that template first
+        if let Some(name) = template_name {
+            if let Some(content) = utils::resolve_custom_template(template_manager, name, component) {
+                return Ok(content);
+            }
+            eprintln!(
+                "⚠️  Component '{}' not found in template '{}' — using built-in.",
+                component, name
+            );
+        } else {
+            // 2. Disk convention: template named "module-{component}"
+            if let Some(content) = utils::resolve_custom_template(
+                template_manager,
+                &format!("module-{}", component),
+                component,
+            ) {
+                return Ok(content);
             }
         }
-        
-        // Fallback para templates embutidos
-        let builtin_template = match component {
+        // 3. Built-in fallback
+        let builtin = match component {
             "controller" => include_str!("../templates/module/controller.pas"),
-            "service" => include_str!("../templates/module/service.pas"),
+            "service"    => include_str!("../templates/module/service.pas"),
             "repository" => include_str!("../templates/module/repository.pas"),
-            "interface" => include_str!("../templates/module/interface.pas"),
-            "infra" => include_str!("../templates/module/infra.pas"),
-            "module" => include_str!("../templates/module/module.pas"),
-            "handler" => include_str!("../templates/module/handler.pas"),
+            "interface"  => include_str!("../templates/module/interface.pas"),
+            "infra"      => include_str!("../templates/module/infra.pas"),
+            "module"     => include_str!("../templates/module/module.pas"),
+            "handler"    => include_str!("../templates/module/handler.pas"),
             _ => return Err(CliError::ValidationError(format!("Unknown component: {}", component))),
         };
-        
-        Ok(builtin_template.to_string())
+        Ok(builtin.to_string())
     }
 
-    /// Obtém o diretório de templates
-    fn get_templates_directory() -> Result<PathBuf, CliError> {
-        let home = std::env::var("HOME")
-            .or_else(|_| std::env::var("USERPROFILE"))
-            .map_err(|_| CliError::ValidationError("Could not find home directory".to_string()))?;
-        
-        let templates_dir = PathBuf::from(home).join(".nest4d").join("templates");
-        
-        if !templates_dir.exists() {
-            fs::create_dir_all(&templates_dir).map_err(|e| CliError::IoError(e))?;
-        }
-        
-        Ok(templates_dir)
-    }
-
-    /// Gera os arquivos solicitados para um módulo Nest4d dentro de `src/modules/<module_name>/`
+    /// Generates the requested files for a Nidus module under `src/modules/<module_name>/`
     ///
-    /// # Parâmetros
-    /// - `src_path`: caminho base da pasta `src/` do projeto
-    /// - `module_name`: nome do módulo (ex: "config")
-    /// - `components`: lista de componentes a gerar ("controller", "service", etc) ou "all"
+    /// # Parameters
+    /// - `src_path`: base path of the project `src/` directory
+    /// - `module_name`: module name (e.g. "config")
+    /// - `components`: list of components to generate ("controller", "service", etc.) or "all"
+    /// - `dry_run`: if true, only previews what would be generated without writing to disk
     pub fn generate_module_structure(
         src_path: PathBuf,
         module_name: &str,
         components: &[&str],
+        overwrite: bool,
+        template_name: Option<&str>,
+        dry_run: bool,
     ) -> std::io::Result<()> {
         use colored::*;
 
         let module_dir: PathBuf = src_path.join("modules").join(module_name.to_lowercase());
-        fs::create_dir_all(&module_dir)?;
+        if !dry_run {
+            fs::create_dir_all(&module_dir)?;
+        }
 
         let all_components = [
             "module",
@@ -81,13 +87,15 @@ pub mod module {
         let mut created_files: Vec<(PathBuf, u64, String)> = Vec::new();
         let mod_camel_case = utils::camel_case(module_name);
 
-        // Inicializa o TemplateManager
-        let templates_dir = get_templates_directory().map_err(|e| {
-            std::io::Error::new(std::io::ErrorKind::Other, format!("Template directory error: {}", e))
+        // Initialize the TemplateManager
+        let templates_dir = utils::get_templates_directory().map_err(|e| {
+            std::io::Error::other(format!("Template directory error: {}", e))
         })?;
         let mut template_manager = TemplateManager::new(templates_dir).map_err(|e| {
-            std::io::Error::new(std::io::ErrorKind::Other, format!("TemplateManager error: {}", e))
+            std::io::Error::other(format!("TemplateManager error: {}", e))
         })?;
+
+        let mut skipped_files: Vec<PathBuf> = Vec::new();
 
         for comp in to_generate.iter().copied() {
             let filename = format!(
@@ -96,10 +104,28 @@ pub mod module {
                 utils::camel_case(comp)
             );
             let filepath = module_dir.join(&filename);
-            
-            // Usa a nova lógica inteligente de templates
-            let template_content = get_template_content(&mut template_manager, comp).map_err(|e| {
-                std::io::Error::new(std::io::ErrorKind::Other, format!("Template error: {}", e))
+
+            if dry_run {
+                // In dry-run mode, just show what would be created
+                println!("  → Would create: {}", filepath.display());
+                created_files.push((filepath, 0, String::new()));
+                continue;
+            }
+
+            // Skip file if it already exists and --overwrite was not passed
+            if filepath.exists() && !overwrite {
+                println!(
+                    "  {} {} (use --overwrite to replace)",
+                    "⏭  Skipping existing:".yellow(),
+                    utils::path_to_unix_style(&filepath)
+                );
+                skipped_files.push(filepath);
+                continue;
+            }
+
+            // Resolve template content (named template → disk convention → built-in)
+            let template_content = get_template_content(&mut template_manager, comp, template_name).map_err(|e| {
+                std::io::Error::other(format!("Template error: {}", e))
             })?;
 
             let content = template_content.replace("{{mod}}", &mod_camel_case);
@@ -107,14 +133,26 @@ pub mod module {
             created_files.push(utils::write_file_with_stats(&filepath, &content)?);
         }
 
-        // 🔍 Filtra só module e handler para o AppModule
+        if dry_run {
+            // Dry-run summary — nothing was written
+            println!(
+                "\n🔍 Dry run — {} file(s) would be created (no changes made)",
+                created_files.len()
+            );
+            return Ok(());
+        }
+
+        // 🔍 Only module and handler are registered in AppModule — intentional behavior.
+        // Controller/Service/Repository/Infra are registered INSIDE the Module itself
+        // via Binds(), following the Nidus IoC pattern. AppModule must not know the
+        // internal details of each module.
         let generated_for_appmodule: Vec<&str> = to_generate
             .iter()
             .filter(|c| **c == "module" || **c == "handler")
             .copied()
             .collect();
 
-        // 📌 Monta unidades para adicionar no .dpr (todas as geradas)
+        // 📌 Build the units list to add to .dpr (all generated files)
         let units_with_paths: Vec<(String, PathBuf)> = created_files
             .iter()
             .map(|(path, _, _)| {
@@ -123,16 +161,17 @@ pub mod module {
             })
             .collect();
 
-        // 📄 Busca o .dpr e adiciona as units
-        let dpr_path: PathBuf = project::ensure_project_dpr_exists();
+        // 📄 Locate the .dpr and add the generated units
+        let dpr_path: PathBuf = project::ensure_project_dpr_exists()
+            .map_err(|e| std::io::Error::other(e.to_string()))?;
 
-        // ✍️ Adiciona as units ao .dpr
+        // ✍️ Add units to .dpr
         project_unit::add_units_to_dpr(&dpr_path, &units_with_paths)?;
 
-        // 📝 Atualiza o AppModule
+        // 📝 Update AppModule
         module_unit::update_app_module(module_name, &generated_for_appmodule)?;
 
-        // 📊 Resumo
+        // 📊 Summary
         println!("\n{}", "🧱 Module generation summary".bold().cyan());
         println!("{} {}", "📦 Module:".bold(), module_name);
         println!(
@@ -156,6 +195,13 @@ pub mod module {
             "total".dimmed(),
             format!("{} bytes", total_bytes).green()
         );
+        if !skipped_files.is_empty() {
+            println!(
+                "{} {}",
+                "⏭  Files skipped (already exist):".bold(),
+                skipped_files.len()
+            );
+        }
 
         Ok(())
     }

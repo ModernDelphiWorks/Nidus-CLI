@@ -4,7 +4,7 @@ interface
 
 uses
   System.SysUtils,
-  System.Evolution.ResultPair,
+  ModernSyntax.ResultPair,
   {{mod}}Service,
   {{mod}}Interface;
 
@@ -24,7 +24,7 @@ type
 implementation
 
 uses
-  nest4d.horse;
+  Nidus.horse;
 
 { T{{mod}}Controller }
 

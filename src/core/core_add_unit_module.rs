@@ -36,6 +36,11 @@ pub mod module_unit {
                 }
                 if let Some(insert_pos) = _find_uses_insert_pos(content) {
                     content.insert_str(insert_pos, &format!(",\n  {}", unit_name));
+                } else {
+                    eprintln!(
+                        "⚠️  Could not find 'uses' block in AppModule.pas — add '{}' manually.",
+                        unit_name
+                    );
                 }
             }
         }
@@ -117,12 +122,12 @@ pub mod module_unit {
         let body = caps.get(2).unwrap().as_str();
         let tail = caps.get(3).unwrap().as_str();
 
-        // Captura conteúdo do Result := [ ... ];
+        // Capture the content of Result := [ ... ];
         let re_result = Regex::new(r"(?s)Result\s*:=\s*\[(?P<items>.*?)\]\s*;").unwrap();
 
         let mut items = parse_result_items(body, &re_result);
 
-        // Adiciona sem duplicar
+        // Add without duplicating
         for it in add_items {
             if !items.iter().any(|x| x == it) {
                 items.push(it.clone());
@@ -174,6 +179,26 @@ pub mod module_unit {
         items
     }
 
+    #[cfg(test)]
+    pub(super) fn rebuild_aligned_result_pub(items: &[String]) -> String {
+        rebuild_aligned_result(items)
+    }
+
+    #[cfg(test)]
+    pub(super) fn find_uses_insert_pos_pub(content: &str) -> Option<usize> {
+        _find_uses_insert_pos(content)
+    }
+
+    #[cfg(test)]
+    pub(super) fn replace_module_placeholder_pub(content: &mut String, mod_camel: &str) {
+        _replace_module_placeholder(content, mod_camel)
+    }
+
+    #[cfg(test)]
+    pub(super) fn upsert_result_list_aligned_pub(content: &mut String, func_name: &str, items: &[String]) {
+        upsert_result_list_aligned(content, func_name, items)
+    }
+
     /// 🇧🇷 Recria o `Result := [ ... ];` com indentação e quebras alinhadas.
     /// 🇺🇸 Rebuilds `Result := [ ... ];` using aligned indentation and breaks.
     fn rebuild_aligned_result(items: &[String]) -> String {
@@ -197,5 +222,99 @@ pub mod module_unit {
         }
         format_result.push_str("];\n");
         format_result
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::module_unit::*;
+
+    #[test]
+    fn test_find_uses_insert_pos_basic() {
+        let content = "uses\n  SomeUnit;\n";
+        let pos = find_uses_insert_pos_pub(content).unwrap();
+        // Deve apontar para o ';' final do uses
+        assert_eq!(&content[pos..pos + 1], ";");
+    }
+
+    #[test]
+    fn test_find_uses_insert_pos_no_uses() {
+        assert!(find_uses_insert_pos_pub("no uses block here").is_none());
+    }
+
+    #[test]
+    fn test_replace_module_placeholder() {
+        let mut content = "T<mod>Module registers T<mod>Service".to_string();
+        replace_module_placeholder_pub(&mut content, "User");
+        assert_eq!(content, "TUserModule registers TUserService");
+    }
+
+    #[test]
+    fn test_replace_module_placeholder_no_match() {
+        let mut content = "nothing to replace".to_string();
+        replace_module_placeholder_pub(&mut content, "User");
+        assert_eq!(content, "nothing to replace");
+    }
+
+    #[test]
+    fn test_rebuild_aligned_result_empty() {
+        let result = rebuild_aligned_result_pub(&[]);
+        assert!(result.contains("Result := ["));
+        assert!(result.contains("];"));
+    }
+
+    #[test]
+    fn test_rebuild_aligned_result_single_item() {
+        let items = vec!["TUserHandler".to_string()];
+        let result = rebuild_aligned_result_pub(&items);
+        assert!(result.contains("TUserHandler"));
+        assert!(result.contains("Result := ["));
+    }
+
+    #[test]
+    fn test_rebuild_aligned_result_multiple_items() {
+        let items = vec!["TUserHandler".to_string(), "TOrderHandler".to_string()];
+        let result = rebuild_aligned_result_pub(&items);
+        assert!(result.contains("TUserHandler"));
+        assert!(result.contains("TOrderHandler"));
+        assert!(result.contains(",\n"));
+    }
+
+    #[test]
+    fn test_upsert_adds_item_to_function() {
+        let mut content = "\
+function TAppModule.RouteHandlers: TArray<TObject>;
+begin
+  Result := [];
+end;
+"
+        .to_string();
+        upsert_result_list_aligned_pub(
+            &mut content,
+            "RouteHandlers",
+            &["TUserHandler".to_string()],
+        );
+        assert!(content.contains("TUserHandler"));
+    }
+
+    #[test]
+    fn test_upsert_no_duplicates() {
+        let mut content = "\
+function TAppModule.Routes: TArray<TObject>;
+begin
+  Result := [RouteModule('/api/v1/user', TUserModule)];
+end;
+"
+        .to_string();
+        upsert_result_list_aligned_pub(
+            &mut content,
+            "Routes",
+            &["RouteModule('/api/v1/user', TUserModule)".to_string()],
+        );
+        // Deve conter apenas uma ocorrência
+        assert_eq!(
+            content.matches("RouteModule('/api/v1/user', TUserModule)").count(),
+            1
+        );
     }
 }

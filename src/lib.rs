@@ -5,10 +5,10 @@ pub mod error;
 pub mod templates;
 pub mod validation;
 
-// Re-export principais tipos
+// Re-export main types
 pub use error::{CliError, Result};
 
-/// Inicializa o sistema de logging
+/// Initializes the logging system
 pub fn init_logging() {
     env_logger::Builder::from_default_env()
         .filter_level(log::LevelFilter::Info)
