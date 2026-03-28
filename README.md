@@ -1,343 +1,532 @@
 # Nidus CLI
 
-🚀 **Nidus Framework for Delphi** - A modern command-line tool for rapid Delphi application development inspired by NestJS.
+🚀 **Nidus Framework for Delphi** — A modern command-line tool for rapid Delphi application development inspired by NestJS.
 
-## 📋 Table of Contents
+[![CI](https://github.com/ModernDelphiWorks/Nidus-CLI/actions/workflows/ci.yml/badge.svg)](https://github.com/ModernDelphiWorks/Nidus-CLI/actions/workflows/ci.yml)
+[![Release](https://github.com/ModernDelphiWorks/Nidus-CLI/actions/workflows/release.yml/badge.svg)](https://github.com/ModernDelphiWorks/Nidus-CLI/releases)
+![Version](https://img.shields.io/badge/version-2.0.0-blue)
+![License](https://img.shields.io/badge/license-MIT-green)
 
-- [Installation](#-installation)
-- [Quick Start](#-quick-start)
-- [Available Commands](#-available-commands)
-- [Project Structure](#️-project-structure)
-- [Examples](#-examples)
-- [Configuration](#️-configuration)
-- [Contributing](#-contributing)
-- [License](#-license)
+---
 
-## 🔧 Installation
+## Table of Contents
+
+- [Installation](#installation)
+- [Quick Start](#quick-start)
+- [Commands](#commands)
+  - [new](#new)
+  - [init](#init)
+  - [install](#install)
+  - [update](#update)
+  - [gen](#gen)
+  - [remove](#remove)
+  - [sync](#sync)
+  - [doctor](#doctor)
+  - [deps](#deps)
+  - [outdated](#outdated)
+  - [clean](#clean)
+  - [template](#template)
+  - [info](#info)
+  - [completions](#completions)
+- [Project Structure](#project-structure)
+- [nidus.json Configuration](#nidusjson-configuration)
+- [nidus.lock](#niduslock)
+- [Template System](#template-system)
+- [Contributing](#contributing)
+- [License](#license)
+
+---
+
+## Installation
 
 ### Prerequisites
 
-- Delphi 10.3 or higher
-- Git installed
-- Windows (support for other platforms in development)
+- Git installed and available in PATH
+- Delphi 10.3 or higher (for the generated projects)
 
-### Installation via Cargo
+### Pre-built binary
+
+Download the latest binary for your platform from the [releases page](https://github.com/ModernDelphiWorks/Nidus-CLI/releases) and add it to your PATH.
+
+| Platform | File                 |
+| -------- | -------------------- |
+| Linux    | `Nidus-linux`        |
+| Windows  | `Nidus-windows.exe`  |
+| macOS    | `Nidus-macos`        |
+
+### Build from source
 
 ```bash
-cargo install Nidus-cli
+cargo install --git https://github.com/ModernDelphiWorks/Nidus-CLI
 ```
 
-### Installation via Binary
-
-Download the latest binary from the [releases page](https://github.com/ModernDelphiWorks/Nidus-cli/releases) and add it to your PATH.
-
-## 🚀 Quick Start
-
-### 1. Create a new project
+### Shell tab-completion
 
 ```bash
-Nidus new MyApp --path ./
+# Bash
+Nidus completions bash >> ~/.bashrc
+
+# Zsh
+Nidus completions zsh >> ~/.zshrc
+
+# Fish
+Nidus completions fish > ~/.config/fish/completions/Nidus.fish
 ```
 
-### 2. Install dependencies
+---
+
+## Quick Start
 
 ```bash
+# 1. Scaffold a new project
+Nidus new MyApp
+
+# 2. Install framework dependencies
 cd MyApp
 Nidus install
-```
 
-### 3. Generate a module
-
-```bash
+# 3. Generate a module
 Nidus gen module User
+
+# 4. Check project health
+Nidus doctor
 ```
 
-### 4. Generate specific components
+---
 
-```bash
-Nidus gen controller User
-Nidus gen service User
-Nidus gen repository User
-```
+## Commands
 
-## 📚 Available Commands
+### `new`
 
-### `new` - Create new project
+Scaffold a new Delphi/Nidus project.
 
 ```bash
 Nidus new <name> [--path <path>] [--with-tests]
 ```
 
-**Arguments:**
-- `<name>`: Project name (required)
+Creates the full project structure: `.dpr`, `AppModule.pas`, `src/modules/`, `.gitignore`.
 
-**Options:**
-- `--path`: Path where to create the project (must start with `./`)
-- `--with-tests`: Include test structure
+| Option          | Description                                                    |
+| --------------- | -------------------------------------------------------------- |
+| `--path <path>` | Directory where the project will be created (default: `.`)     |
+| `--with-tests`  | Also creates a `test/` directory                               |
 
-### `gen` - Generate components
+---
+
+### `init`
+
+Initialize `nidus.json` in an existing Delphi project.
+
+```bash
+Nidus init [--download <url>] [--mainsrc <dir>] [--force]
+```
+
+Creates `nidus.json` without touching any source files. Use this when adopting Nidus in an existing project.
+
+| Option              | Description                                              |
+| ------------------- | -------------------------------------------------------- |
+| `--download <url>`  | Main framework git URL (default: official Nidus repo)    |
+| `--mainsrc <dir>`   | Sources directory (default: `src/`)                      |
+| `--force`           | Overwrite if `nidus.json` already exists                 |
+
+---
+
+### `install`
+
+Clone all dependencies listed in `nidus.json`.
+
+```bash
+Nidus install
+Nidus install --add <url> [--branch <branch>]
+Nidus install --remove <url>
+Nidus install --frozen
+```
+
+Automatically syncs `.dproj` search paths and writes `nidus.lock` after cloning.
+
+| Option              | Description                                                                                         |
+| ------------------- | --------------------------------------------------------------------------------------------------- |
+| `--add <url>`       | Register a new dependency and clone it immediately. Rolls back `nidus.json` if the clone fails.     |
+| `--branch <branch>` | Branch to use with `--add`                                                                          |
+| `--remove <url>`    | Remove a dependency from `nidus.json`                                                               |
+| `--frozen`          | Fail if `nidus.lock` is missing or any repo diverges from the locked commit                         |
+
+---
+
+### `update`
+
+Fast-forward dependency repositories to the latest remote commit.
+
+```bash
+Nidus update
+Nidus update --dep <url-or-name>
+```
+
+Updates `nidus.lock` after completion.
+
+| Option                 | Description                                              |
+| ---------------------- | -------------------------------------------------------- |
+| `--dep <url-or-name>`  | Update only the matching dependency (URL or repo name)   |
+
+---
+
+### `gen`
+
+Generate Delphi components for a Nidus module.
 
 ```bash
 Nidus gen <type> <name> [options]
 ```
 
-**Available types:**
-- `module`: Generates a complete module
-- `controller`: Generates only the controller
-- `service`: Generates only the service
-- `repository`: Generates only the repository
-- `interface`: Generates only the interface
-- `infra`: Generates only the infrastructure
-- `handler`: Generates only the handler
-- `scaffold`: Generates complete structure
-- `all`: Generates all components
+**Types:**
+
+| Type         | Files generated                                                     |
+| ------------ | ------------------------------------------------------------------- |
+| `module`     | `XxxModule.pas`, `XxxHandler.pas`                                   |
+| `handler`    | `XxxHandler.pas`                                                    |
+| `controller` | `XxxController.pas`                                                 |
+| `service`    | `XxxService.pas`                                                    |
+| `repository` | `XxxRepository.pas`                                                 |
+| `interface`  | `XxxInterface.pas`                                                  |
+| `infra`      | `XxxInfra.pas`                                                      |
+| `scaffold`   | All of the above                                                    |
+| `all`        | All of the above                                                    |
 
 **Options:**
-- `--flat`: Don't create subfolder for the module
-- `--path <path>`: Specific path for generation
-- `--overwrite`: Overwrite existing files
 
-### `install` - Install framework dependencies
+| Option                | Description                                                                        |
+| --------------------- | ---------------------------------------------------------------------------------- |
+| `--path <path>`       | Custom path to `src/` folder (default: `./src`)                                    |
+| `--overwrite`         | Overwrite existing files                                                           |
+| `--template <name>`   | Use a specific custom template from `~/.Nidus/templates/<name>`                    |
+| `--dry-run`           | Preview files that would be generated without writing them                         |
+| `--interactive` / `-i`| Select components via an interactive multi-select menu (requires TTY)              |
 
-```bash
-Nidus install
-```
-
-Clones all dependency repositories listed in `nidus.json` into `./dependencies`.
-
-> **Note:** To install custom code-generation templates, use `Nidus template install <source>`.
-
-### `update` - Update framework dependencies
+**Examples:**
 
 ```bash
-Nidus update
+# Generate a module with handler
+Nidus gen module User
+
+# Preview without writing
+Nidus gen scaffold Order --dry-run
+
+# Choose components interactively
+Nidus gen scaffold Payment --interactive
+
+# Use a custom template
+Nidus gen module Auth --template jwt-template
+
+# Overwrite existing files
+Nidus gen controller Product --overwrite
 ```
 
-Fetches updates for all dependency repositories in `./dependencies`.
+---
 
-> **Note:** To update custom code-generation templates, use `Nidus template update`.
+### `remove`
 
-### `sync` - Sync dependency paths to Delphi project
+Remove a module and clean up the `.dpr` file.
+
+```bash
+Nidus remove <name>
+# alias:
+Nidus rm <name>
+```
+
+Deletes the module directory and removes its units from the `.dpr` file.
+
+---
+
+### `sync`
+
+Sync `.dproj` unit search paths.
 
 ```bash
 Nidus sync
+# alias:
+Nidus add-paths
 ```
 
-Adds `src`/`Source` paths from `./dependencies` to the `.dproj` search path. Previously named `add-paths` (still works as alias).
+Adds `src`/`Source` sub-paths from the dependencies directory to the `.dproj` `DCC_UnitSearchPath`, using Windows-style separators as required by Delphi.
 
-### `info` - Show CLI environment details
+---
+
+### `doctor`
+
+Run a project health check.
+
+```bash
+Nidus doctor
+Nidus doctor --fix
+Nidus doctor --json
+```
+
+Runs a 5-section health check and reports issues and warnings.
+
+| Section                   | Checks                                                               |
+| ------------------------- | -------------------------------------------------------------------- |
+| **A. Configuration**      | `nidus.json` validity, `mainsrc`, `download` URL                     |
+| **B. Project Structure**  | `.dpr`, `.dproj`, `src/`, `AppModule.pas`, `modules/`                |
+| **C. Dependencies**       | Clone status, `.git/` integrity, `DCC_UnitSearchPath` sync           |
+| **D. Module Consistency** | `.dpr` unit paths, module registration, `AppModule.pas` references   |
+| **E. Environment**        | Custom templates count, CLI version                                  |
+
+| Option   | Description                                                                          |
+| -------- | ------------------------------------------------------------------------------------ |
+| `--fix`  | Auto-fix detected issues: clones missing deps (C1/C2) and syncs `.dproj` paths (C4)  |
+| `--json` | Output a structured JSON report — ideal for CI/CD pipelines                          |
+
+---
+
+### `deps`
+
+List all dependencies with clone and git status.
+
+```bash
+Nidus deps
+Nidus deps --json
+```
+
+Shows clone status, branch, and last commit SHA/date per dependency.
+
+---
+
+### `outdated`
+
+Check if dependencies have new commits without updating.
+
+```bash
+Nidus outdated
+```
+
+Fetches each dependency's remote and compares with the local HEAD. Reports which repos have new commits — without modifying anything.
+
+---
+
+### `clean`
+
+Remove Delphi build artifacts.
+
+```bash
+Nidus clean
+Nidus clean --execute
+Nidus clean --execute --yes
+Nidus clean --path ./MyApp
+```
+
+Scans for Delphi build artifacts. Git-tracked files are **never** deleted.
+
+| Removed      | Items                                                                          |
+| ------------ | ------------------------------------------------------------------------------ |
+| Files        | `*.dcu`, `*.dcp`, `*.bpl`, `*.bpi`, `*.drc`, `*.map`                           |
+| Directories  | `Win32/`, `Win64/`, `OSX32/`, `OSX64/`, `__history/`, `__recovery/`            |
+
+| Option          | Description                                     |
+| --------------- | ----------------------------------------------- |
+| `--execute`/`-x`| Actually delete (default is dry-run)            |
+| `--yes`/`-y`    | Skip confirmation prompt                        |
+| `--path <dir>`  | Directory to scan (default: current dir)        |
+
+---
+
+### `template`
+
+Manage custom code-generation templates.
+
+```bash
+Nidus template list
+Nidus template install <source>
+Nidus template update [<name>]
+Nidus template create <name> [--from <dir>]
+Nidus template config <name> [<key> <value>]
+Nidus template publish <name> <git-url>
+```
+
+| Subcommand             | Description                                                                  |
+| ---------------------- | ---------------------------------------------------------------------------- |
+| `list`                 | List installed custom templates                                              |
+| `install <source>`     | Install a template from a git URL or local path                              |
+| `update [name]`        | Update one or all installed templates                                        |
+| `create <name>`        | Create a new template scaffold                                               |
+| `config <name>`        | Get or set template configuration (persisted to `template.json`)             |
+| `publish <name> <url>` | Push a local template to a git remote                                        |
+
+---
+
+### `info`
+
+Show project and CLI information.
 
 ```bash
 Nidus info
 ```
 
-### `templates` - List built-in template types
+Displays the CLI banner, version, and — when `nidus.json` is present — a project summary with framework URL, dependencies, cloned count, and module count.
+
+---
+
+### `completions`
+
+Generate shell tab-completion scripts.
 
 ```bash
-Nidus templates
+Nidus completions <shell>
 ```
 
-### `pattern` - Show architectural pattern reference
+Supported shells: `bash`, `zsh`, `fish`, `elvish`, `powershell`.
 
-```bash
-Nidus pattern
-```
+---
 
-### Other commands
+## Project Structure
 
-```bash
-Nidus --version    # Shows version
-Nidus --help       # Shows help
-```
-
-## 🏗️ Project Structure
-
-A typical Nidus project has the following structure:
-
-```
+```text
 MyApp/
-├── MyApp.dpr              # Main project file
-├── Nidus.json            # Project configuration
+├── MyApp.dpr               # Main Delphi project file
+├── MyApp.dproj             # Delphi IDE project file (generated by IDE)
+├── nidus.json              # Nidus configuration
+├── nidus.lock              # Dependency lockfile (commit SHAs)
+├── .gitignore              # Delphi-aware gitignore
 ├── src/
-│   ├── AppModule.pas       # Main application module
+│   ├── AppModule.pas       # Application root module
 │   └── modules/
 │       └── user/
 │           ├── UserModule.pas
+│           ├── UserHandler.pas
 │           ├── UserController.pas
 │           ├── UserService.pas
 │           ├── UserRepository.pas
 │           ├── UserInterface.pas
 │           └── UserInfra.pas
-└── test/                   # Tests (if --with-tests was used)
-    └── ...
+└── test/                   # Optional test directory (--with-tests)
 ```
-
-## 💡 Examples
-
-### Creating a complete user module
-
-```bash
-# Generates module, controller, service, repository, interface and infra
-Nidus gen module User
-```
-
-### Generating individual components
-
-```bash
-# Only the controller
-Nidus gen controller Product
-
-# Service in a specific path
-Nidus gen service Order --path ./src/modules/orders
-
-# Overwrite existing file
-Nidus gen repository Customer --overwrite
-```
-
-### Flat structure (without subfolders)
-
-```bash
-# Generates files directly in current folder
-Nidus gen module Auth --flat
-```
-
-## ⚙️ Configuration
-
-The `Nidus.json` file contains the project configurations:
-
-```json
-{
-  "name": "Nidus",
-  "description": "Nidus Framework for Delphi",
-  "version": "1.0.0",
-  "homepage": "https://www.nest4f.com.br",
-  "srcmain": "src",
-  "projects": [],
-  "download": "https://github.com/ModernDelphiWorks/Nidus.git",
-  "dependencies": [
-    "https://github.com/HashLoad/horse.git",
-
-## 🎨 Template System
-
-Nidus CLI uses a standardized template system with the following features:
-
-### Template Variables
-
-All templates use the `{{variable}}` syntax for variable substitution:
-
-- `{{project}}`: Project name (used in project templates)
-- `{{mod}}`: Module name (used in module templates)
-
-### Example Template Usage
-
-```pascal
-unit {{mod}}Module;
-
-interface
-
-uses
-  {{mod}}Controller,
-  {{mod}}Service;
-
-type
-  T{{mod}}Module = class
-  end;
-
-end.
-```
-
-### Supported Templates
-
-- **Project Templates**: `project.dpr`, `AppModule.pas`
-- **Module Templates**: `module.pas`, `controller.pas`, `service.pas`, `repository.pas`, `interface.pas`, `infra.pas`, `handler.pas`
-```
-
-### Adding dependencies
-
-Edit the `dependencies` array in `Nidus.json` and run:
-
-```bash
-Nidus install
-```
-
-## 🧪 Running Tests
-
-```bash
-# Run all tests
-cargo test
-
-# Run specific tests
-cargo test validation
-cargo test integration
-
-# Run with detailed output
-cargo test -- --nocapture
-```
-
-## 🆕 Recent Improvements
-
-### Version 0.1.0
-
-- ✅ **Simplified Command Syntax**: Clean and intuitive `new` command
-  - Usage: `Nidus new MyApp`
-
-- ✅ **Standardized Template System**: All templates now use `{{variable}}` syntax
-  - Consistent variable substitution across all templates
-  - Better maintainability and extensibility
-
-- ✅ **Dynamic Version Management**: Version is now read from `Cargo.toml`
-  - No more hardcoded versions in the code
-  - Automatic synchronization between package and CLI version
-
-- ✅ **Enhanced Documentation**: Complete README with examples and usage
-
-- ✅ **Comprehensive Testing**: Integration and validation tests included
-
-## 🤝 Contributing
-
-1. Fork the project
-2. Create a feature branch (`git checkout -b feature/AmazingFeature`)
-3. Commit your changes (`git commit -m 'Add some AmazingFeature'`)
-4. Push to the branch (`git push origin feature/AmazingFeature`)
-5. Open a Pull Request
-
-### Local Development
-
-```bash
-# Clone the repository
-git clone https://github.com/your-repo/Nidus-cli.git
-cd Nidus-cli
-
-# Install dependencies
-cargo build
-
-# Run tests
-cargo test
-
-# Run CLI locally
-cargo run -- --help
-```
-
-## 📝 License
-
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
-## 🆘 Support
-
-- 📖 [Documentation](https://Nidus.dev)
-- 🐛 [Report Bug](https://github.com/your-repo/Nidus-cli/issues)
-- 💡 [Request Feature](https://github.com/your-repo/Nidus-cli/issues)
-- 💬 [Discussions](https://github.com/your-repo/Nidus-cli/discussions)
-
-## 🎯 Roadmap
-
-- [ ] Support for Linux and macOS
-- [ ] Customizable templates
-- [ ] IDE integration
-- [ ] Automatic documentation generation
-- [ ] Docker support
-- [ ] Plugin system
 
 ---
 
-**Made with ❤️ for the Delphi community**
+## nidus.json Configuration
+
+```json
+{
+  "name": "MyApp",
+  "description": "My Nidus application",
+  "version": "master",
+  "homepage": "https://www.isaquepinheiro.com.br/nidus",
+  "mainsrc": "src/",
+  "projects": [],
+  "download": "https://github.com/ModernDelphiWorks/Nidus.git",
+  "dependencies": {
+    "https://github.com/HashLoad/Horse.git": "",
+    "https://github.com/ModernDelphiWorks/ModernSyntax.git": "",
+    "https://github.com/ModernDelphiWorks/InjectContainer.git": ""
+  }
+}
+```
+
+| Field          | Description                                                          |
+| -------------- | -------------------------------------------------------------------- |
+| `mainsrc`      | Relative path to the sources directory                               |
+| `download`     | Main framework repository URL                                        |
+| `dependencies` | Map of `"url": "branch"` (empty string = default branch)             |
+
+---
+
+## nidus.lock
+
+`nidus.lock` is generated automatically after `install` and `update`. It records the exact commit SHA of each cloned dependency, enabling reproducible builds.
+
+```json
+{
+  "version": "1",
+  "generated_at": "2026-03-28T12:00:00Z",
+  "dependencies": {
+    "https://github.com/HashLoad/Horse.git": {
+      "branch": "master",
+      "commit": "abc123def456...",
+      "locked_at": "2026-03-28T12:00:00Z"
+    }
+  }
+}
+```
+
+Use `Nidus install --frozen` to enforce exact commit matching in CI/CD.
+
+---
+
+## Template System
+
+### Built-in templates
+
+All built-in templates use `{{variable}}` placeholders:
+
+- `{{project}}` — project name (`.dpr` template)
+- `{{mod}}` — module name (module templates)
+
+### Custom templates
+
+Install a template from a git repository:
+
+```bash
+Nidus template install https://github.com/user/my-template.git
+```
+
+Templates are stored in `~/.Nidus/templates/<name>/` and resolved automatically during `gen` if a `module-<component>` convention is found, or explicitly with `--template <name>`.
+
+### Template structure
+
+```text
+~/.Nidus/templates/my-template/
+├── template.json       # Metadata and configuration
+└── *.pas               # Template files with {{mod}} placeholders
+```
+
+---
+
+## Contributing
+
+1. Fork the repository
+2. Create a feature branch: `git checkout -b feature/my-feature`
+3. Commit your changes: `git commit -m 'feat: add my feature'`
+4. Push to the branch: `git push origin feature/my-feature`
+5. Open a Pull Request
+
+### Local development
+
+```bash
+git clone https://github.com/ModernDelphiWorks/Nidus-CLI.git
+cd Nidus-CLI
+cargo build
+cargo test
+cargo run -- --help
+```
+
+### Running tests
+
+```bash
+# All tests
+cargo test
+
+# Integration tests only
+cargo test --test integration_tests
+
+# Validation tests only
+cargo test --test validation_tests
+
+# With output
+cargo test -- --nocapture
+```
+
+---
+
+## License
+
+This project is licensed under the MIT License — see the [LICENSE](LICENSE) file for details.
+
+## Support
+
+- 📖 [Documentation](https://www.isaquepinheiro.com.br/docs/nidus)
+- 🐛 [Report a bug](https://github.com/ModernDelphiWorks/Nidus-CLI/issues)
+- 💡 [Request a feature](https://github.com/ModernDelphiWorks/Nidus-CLI/issues)
+- 💬 [Discussions](https://github.com/ModernDelphiWorks/Nidus-CLI/discussions)
+
+---
+
+Made with ❤️ for the Delphi community
